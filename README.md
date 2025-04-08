@@ -1,1 +1,1 @@
-# mokomoko-merino
+# MofuGao Lab (モフガオ・ラボ)
