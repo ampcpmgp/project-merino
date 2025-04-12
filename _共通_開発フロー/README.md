@@ -9,7 +9,7 @@
 ## 楽曲作成
 
 - [Suno AI](https://suno.com/)
-- [Online MP3 Cutter](https://mp3cut.net/ja/)$$
+- [Online MP3 Cutter](https://mp3cut.net/ja/)
 - mp3ファイルの「曲名」と「参加アーティスト」、「年」を指定する
 - YouTube Music に mp3 をアップロードする
 
