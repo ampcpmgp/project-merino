@@ -1,4 +1,4 @@
 # Roadmap
 
-- [] LGTM Image & CDN Server
-- [] 
+- [ ] LGTM Image & CDN Server
+- [ ] xxx
