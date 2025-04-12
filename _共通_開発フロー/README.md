@@ -10,7 +10,7 @@
 
 - [Suno AI](https://suno.com/)
 - [Online MP3 Cutter](https://mp3cut.net/ja/)
-- mp3ファイルの「曲名」と「参加アーティスト」、「年」を指定する
+- mp3ファイルのメタ情報とストリーム情報（カバー画像）を全て消し、「曲名」と「参加アーティスト」、「年」を指定する
 - YouTube Music に mp3 をアップロードする
 
 ## SRTファイル作成
