@@ -4,3 +4,9 @@
 
 - ffmpeg
 - bun
+
+## インストール
+
+```bash
+bun install
+```
