@@ -12,6 +12,13 @@
 - [もこもこメリノ](./もこもこメリノ/README.md)
 - [琥珀ハル](./琥珀ハル/README.md)
 
+## ライセンス
+
+キャラクターに関するライセンスは [LICENSE.md](./キャラクター/LICENSE.md) を参照してください。
+
+キャラクター作成ガイドラインは [GUIDELINE.md](./キャラクター/GUIDELINE.md) を参照してください。
+
 ## ロードマップ
 
 [ROADMAP.md](./ROADMAP.md)
+
