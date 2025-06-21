@@ -19,10 +19,6 @@ git clone https://github.com/kijai/ComfyUI-KJNodes.git
 pip install -r ComfyUI-KJNodes/requirements.txt
 git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 pip install -r ComfyUI-VideoHelperSuite/requirements.txt
-# mofugao-lab workflows
-mkdir -p mofugao-lab/example_workflows
-cd mofugao-lab/example_workflows
-wget -O workflow.json "https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_I2V_Native/workflow.json"
 
 echo "[Install huggingface-cli and download models]"
 cd /workspace/ComfyUI
