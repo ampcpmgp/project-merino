@@ -15,4 +15,4 @@
 - See logs, wait to start a server
 - Connect to server in browser (port 8188)
 - Drag [workflow.json](./workflow.json) file onto the screen.
-- Start ComfyUI
+- Execute ComfyUI

@@ -19,14 +19,20 @@ git clone https://github.com/kijai/ComfyUI-KJNodes.git
 pip install -r ComfyUI-KJNodes/requirements.txt
 git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 pip install -r ComfyUI-VideoHelperSuite/requirements.txt
+# mofugao-lab workflows
+mkdir -p mofugao-lab/example_workflows
+cd mofugao-lab/example_workflows
+wget -O workflow.json "https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI%20-%20Wan2.1%20FusionX%20-%20I2V%20Native/workflow.json"
 
 echo "[Install huggingface-cli and download models]"
-cd ../
+cd /workspace/ComfyUI
 pip install -U "huggingface_hub[cli]"
-huggingface-cli download Kijai/WanVideo_comfy umt5-xxl-enc-bf16.safetensors --local-dir models/text_encoders
-huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir models/clip_vision
-huggingface-cli download Kijai/WanVideo_comfy Wan2_1_VAE_bf16.safetensors --local-dir models/vae
-huggingface-cli download vrgamedevgirl84/Wan14BT2VFusioniX Wan14Bi2vFusioniX_fp16.safetensors --local-dir models/diffusion_models
+cd models
+huggingface-cli download Kijai/WanVideo_comfy umt5-xxl-enc-bf16.safetensors --local-dir text_encoders
+huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir clip_vision
+huggingface-cli download Kijai/WanVideo_comfy Wan2_1_VAE_bf16.safetensors --local-dir vae
+huggingface-cli download vrgamedevgirl84/Wan14BT2VFusioniX Wan14Bi2vFusioniX_fp16.safetensors --local-dir diffusion_models
 
 echo "[Start ComfyUI]"
+cd /workspace/ComfyUI
 python main.py --listen
