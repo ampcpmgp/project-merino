@@ -30,4 +30,3 @@ huggingface-cli download vrgamedevgirl84/Wan14BT2VFusioniX Wan14Bi2vFusioniX_fp1
 
 echo "start ComfyUI"
 python main.py --listen
-"
