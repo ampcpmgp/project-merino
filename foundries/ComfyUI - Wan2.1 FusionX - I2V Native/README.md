@@ -13,6 +13,6 @@
 - RTX 4090 or higher
 - Deploy
 - See logs, wait to start a server
-- Connect server (port 8188)
+- Connect to server in browser (port 8188)
 - Drag [workflow.json](./workflow.json) file onto the screen.
 - Start ComfyUI
