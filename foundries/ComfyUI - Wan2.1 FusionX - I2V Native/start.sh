@@ -6,7 +6,7 @@ cd /workspace
 git clone https://github.com/comfyanonymous/ComfyUI.git
 
 echo "[Install ComfyUI dependencies]"
-cd /workspace/ComfyUI
+cd ComfyUI
 pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
 
@@ -21,7 +21,7 @@ git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 pip install -r ComfyUI-VideoHelperSuite/requirements.txt
 
 echo "[Install huggingface-cli and download models]"
-cd /workspace/ComfyUI
+cd ../
 pip install -U "huggingface_hub[cli]"
 huggingface-cli download Kijai/WanVideo_comfy umt5-xxl-enc-bf16.safetensors --local-dir models/text_encoders
 huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir models/clip_vision
