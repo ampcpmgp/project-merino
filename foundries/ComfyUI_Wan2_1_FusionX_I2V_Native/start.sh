@@ -22,7 +22,7 @@ pip install -r ComfyUI-VideoHelperSuite/requirements.txt
 # mofugao-lab workflows
 mkdir -p mofugao-lab/example_workflows
 cd mofugao-lab/example_workflows
-wget -O workflow.json "https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI%20-%20Wan2.1%20FusionX%20-%20I2V%20Native/workflow.json"
+wget -O workflow.json "https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_I2V_Native/workflow.json"
 
 echo "[Install huggingface-cli and download models]"
 cd /workspace/ComfyUI
