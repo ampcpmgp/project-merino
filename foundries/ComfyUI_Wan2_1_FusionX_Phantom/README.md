@@ -1,6 +1,6 @@
-# ComfyUI - Wan
+# ComfyUI_Wan2_1_FusionX_Phantom
 
-- RunPod Template - <https://console.runpod.io/deploy?template=s3gsvfw8ju&ref=1c1r2p2a>
+- RunPod Template - <https://console.runpod.io/deploy?template=4pk1zal9vb&ref=1c1r2p2a>
 
 ## Information
 
@@ -14,15 +14,5 @@
 - Deploy
 - See logs, wait to start a server
 - Connect to server (port 8188)
+- Drag [workflow.json](https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_I2V_Native/workflow.json) file onto the screen.
 - Execute ComfyUI
-
-## Additional Information
-
-### Install Sage Attention 2
-
-```bash
-cd /workspaces
-git clone https://github.com/thu-ml/SageAttention.git
-cd SageAttention
-python setup.py install
-```
