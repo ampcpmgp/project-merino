@@ -20,9 +20,6 @@ pip install -r ComfyUI-KJNodes/requirements.txt
 git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 pip install -r ComfyUI-VideoHelperSuite/requirements.txt
 
-#
-
-#
 echo "[Install huggingface-cli and download models]"
 cd /workspace/ComfyUI
 pip install -U "huggingface_hub[cli]"
@@ -31,7 +28,7 @@ huggingface-cli download Kijai/WanVideo_comfy umt5-xxl-enc-bf16.safetensors --lo
 huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir clip_vision
 huggingface-cli download Kijai/WanVideo_comfy Wan2_1_VAE_bf16.safetensors --local-dir vae
 cd diffusion_models
-wget --header="Authorization: Bearer $CIVITAI_API_KEY" -O Wan14BT2VFusioniX_Phantom.safetensors https://civitai.com/api/download/models/1878555
+wget -O Wan14BT2VFusioniX_Phantom.safetensors https://civitai.com/api/download/models/1878555?token=$CIVITAI_API_KEY
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
