@@ -15,3 +15,14 @@
 - See logs, wait to start a server
 - Connect to server (port 8188)
 - Execute ComfyUI
+
+## Additional Information
+
+### Install Sage Attention 2
+
+```bash
+cd /workspaces
+git clone https://github.com/thu-ml/SageAttention.git
+cd SageAttention
+python setup.py install
+```
