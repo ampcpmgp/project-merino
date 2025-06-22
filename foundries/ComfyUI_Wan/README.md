@@ -1,6 +1,6 @@
 # ComfyUI - Wan
 
-- RunPod Template - <https://console.runpod.io/deploy?template=s3gsvfw8ju&ref=1c1r2p2a>
+- RunPod Template - <https://console.runpod.io/deploy?template=ytr47drnpf&ref=1c1r2p2a>
 
 ## Information
 
