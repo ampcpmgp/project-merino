@@ -19,6 +19,7 @@ git clone https://github.com/kijai/ComfyUI-KJNodes.git
 pip install -r ComfyUI-KJNodes/requirements.txt
 git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 pip install -r ComfyUI-VideoHelperSuite/requirements.txt
+git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git
 
 echo "[Install huggingface-cli and download models]"
 cd /workspace/ComfyUI
