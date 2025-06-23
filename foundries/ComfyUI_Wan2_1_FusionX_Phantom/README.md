@@ -10,7 +10,7 @@
 ## How to use on RunPod
 
 - Select CUDA Versions 12.8 or higher
-- RTX 5090 or higher
+- RTX 4090 or higher
 - Deploy
 - See logs, wait to start a server
 - Connect to server (port 8188)
