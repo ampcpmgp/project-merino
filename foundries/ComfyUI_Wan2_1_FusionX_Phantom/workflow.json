@@ -1,7 +1,7 @@
 {
   "id": "c6e410bc-5e2c-460b-ae81-c91b6094fbb1",
   "revision": 0,
-  "last_node_id": 81,
+  "last_node_id": 82,
   "last_link_id": 135,
   "nodes": [
     {
@@ -16,7 +16,7 @@
         242
       ],
       "flags": {},
-      "order": 17,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -46,10 +46,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "a623f87dcad9cff5a690559fe559566be4045a9a",
         "Node name for S&R": "WanVideoEncode",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         false,
@@ -87,10 +87,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "WanVideoTorchCompileSettings",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         "inductor",
@@ -103,41 +103,18 @@
       ]
     },
     {
-      "id": 42,
-      "type": "Note",
-      "pos": [
-        51.659584045410156,
-        -378.4822998046875
-      ],
-      "size": [
-        297.4657897949219,
-        109.52696990966797
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "Adjust the blocks to swap based on your VRAM, this is a tradeoff between speed and memory usage.\n\nAlternatively there's option to use VRAM management introduced in DiffSynt-Studios. This is usually slower, but saves even more VRAM compared to BlockSwap"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
       "id": 66,
       "type": "ImageConcatMulti",
       "pos": [
-        1551.554931640625,
-        -49.69675064086914
+        1622.781982421875,
+        -99.75150299072266
       ],
       "size": [
         297.6324157714844,
         150
       ],
       "flags": {},
-      "order": 24,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -159,9 +136,9 @@
         }
       ],
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "3e3a1a8aac61dc4515f6a7da74e026f05a80299f",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         2,
@@ -182,7 +159,7 @@
         154
       ],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 2,
       "inputs": [],
       "outputs": [
@@ -196,10 +173,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "WanVideoBlockSwap",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         5,
@@ -210,82 +187,6 @@
       ],
       "color": "#223",
       "bgcolor": "#335"
-    },
-    {
-      "id": 36,
-      "type": "Note",
-      "pos": [
-        802.3024291992188,
-        -288.4462890625
-      ],
-      "size": [
-        346.7398376464844,
-        196.9765167236328
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "fp8_fast seems to cause huge quality degradation\n\nfp_16_fast enables \"Full FP16 Accmumulation in FP16 GEMMs\" feature available in the very latest pytorch nightly, this is around 20% speed boost. \n\nSageattn if you have it installed can be used for almost double inference speed"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 28,
-      "type": "WanVideoDecode",
-      "pos": [
-        1200.946044921875,
-        -49.69910430908203
-      ],
-      "size": [
-        298.0249328613281,
-        174
-      ],
-      "flags": {},
-      "order": 23,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "vae",
-          "type": "WANVAE",
-          "link": 43
-        },
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 33
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            81,
-            126
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
-        "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
-        "Node name for S&R": "WanVideoDecode",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
-      },
-      "widgets_values": [
-        false,
-        272,
-        272,
-        144,
-        128
-      ],
-      "color": "#322",
-      "bgcolor": "#533"
     },
     {
       "id": 77,
@@ -299,7 +200,7 @@
         266
       ],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -344,10 +245,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "f7eb33abc80a2aded1b46dff0dd14d07856a7d50",
         "Node name for S&R": "ImageResizeKJv2",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         512,
@@ -372,7 +273,7 @@
         266
       ],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -417,10 +318,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "f7eb33abc80a2aded1b46dff0dd14d07856a7d50",
         "Node name for S&R": "ImageResizeKJv2",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         512,
@@ -445,7 +346,7 @@
         67.21659088134766
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -462,10 +363,10 @@
       ],
       "title": "Height",
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "3e3a1a8aac61dc4515f6a7da74e026f05a80299f",
         "Node name for S&R": "INTConstant",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         768
@@ -485,7 +386,7 @@
         67.53256225585938
       ],
       "flags": {},
-      "order": 5,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -502,45 +403,16 @@
       ],
       "title": "Width",
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "3e3a1a8aac61dc4515f6a7da74e026f05a80299f",
         "Node name for S&R": "INTConstant",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         512
       ],
       "color": "#1b4669",
       "bgcolor": "#29699c"
-    },
-    {
-      "id": 80,
-      "type": "PreviewImage",
-      "pos": [
-        1532.70654296875,
-        423.1961669921875
-      ],
-      "size": [
-        297.12420654296875,
-        246.00003051757812
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 135
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.29",
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": []
     },
     {
       "id": 69,
@@ -554,7 +426,7 @@
         268.4635925292969
       ],
       "flags": {},
-      "order": 16,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -597,10 +469,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "3e3a1a8aac61dc4515f6a7da74e026f05a80299f",
         "Node name for S&R": "ImagePadKJ",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         0,
@@ -624,7 +496,7 @@
         242
       ],
       "flags": {},
-      "order": 20,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -654,10 +526,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "a623f87dcad9cff5a690559fe559566be4045a9a",
         "Node name for S&R": "WanVideoEncode",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         true,
@@ -668,86 +540,6 @@
         0.006000000000000002,
         1
       ]
-    },
-    {
-      "id": 63,
-      "type": "PreviewImage",
-      "pos": [
-        1537.4755859375,
-        740.1696166992188
-      ],
-      "size": [
-        297.12420654296875,
-        246.00006103515625
-      ],
-      "flags": {},
-      "order": 19,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 102
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.29",
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": []
-    },
-    {
-      "id": 16,
-      "type": "WanVideoTextEncode",
-      "pos": [
-        -730.0460815429688,
-        -321.2693176269531
-      ],
-      "size": [
-        296.6340026855469,
-        286.6754150390625
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "t5",
-          "type": "WANTEXTENCODER",
-          "link": 15
-        },
-        {
-          "name": "model_to_offload",
-          "shape": 7,
-          "type": "WANVIDEOMODEL",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "text_embeds",
-          "type": "WANVIDEOTEXTEMBEDS",
-          "slot_index": 0,
-          "links": [
-            30
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
-        "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
-        "Node name for S&R": "WanVideoTextEncode",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
-      },
-      "widgets_values": [
-        "羊の帽子を被った少女は手を振って歓迎しています。青色の猫ちゃんが、少女の周りを優雅に歩いています。",
-        "",
-        true
-      ],
-      "color": "#332922",
-      "bgcolor": "#593930"
     },
     {
       "id": 11,
@@ -761,7 +553,7 @@
         138.35194396972656
       ],
       "flags": {},
-      "order": 6,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -775,10 +567,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "LoadWanVideoT5TextEncoder",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         "umt5-xxl-enc-bf16.safetensors",
@@ -801,7 +593,7 @@
         267.9233703613281
       ],
       "flags": {},
-      "order": 15,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
@@ -845,10 +637,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "comfyui-kjnodes",
+        "aux_id": "kijai/ComfyUI-KJNodes",
         "ver": "3e3a1a8aac61dc4515f6a7da74e026f05a80299f",
         "Node name for S&R": "ImagePadKJ",
-        "aux_id": "kijai/ComfyUI-KJNodes"
+        "cnr_id": "comfyui-kjnodes"
       },
       "widgets_values": [
         0,
@@ -872,7 +664,7 @@
         58
       ],
       "flags": {},
-      "order": 7,
+      "order": 5,
       "mode": 4,
       "inputs": [],
       "outputs": [
@@ -883,10 +675,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "WanVideoVRAMManagement",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         1
@@ -904,7 +696,7 @@
         82
       ],
       "flags": {},
-      "order": 8,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -920,10 +712,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "WanVideoVAELoader",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         "Wan2_1_VAE_bf16.safetensors",
@@ -933,151 +725,147 @@
       "bgcolor": "#533"
     },
     {
-      "id": 74,
-      "type": "WanVideoPhantomEmbeds",
+      "id": 75,
+      "type": "LoadImage",
       "pos": [
-        398.4496154785156,
-        40.72762680053711
+        -1098.0748291015625,
+        31.673595428466797
       ],
       "size": [
-        348.1442565917969,
-        237.9500732421875
+        346.8157958984375,
+        467.43426513671875
       ],
       "flags": {},
-      "order": 21,
+      "order": 7,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "phantom_latent_1",
-          "type": "LATENT",
-          "link": 122
-        },
-        {
-          "name": "phantom_latent_2",
-          "shape": 7,
-          "type": "LATENT",
-          "link": 123
-        },
-        {
-          "name": "phantom_latent_3",
-          "shape": 7,
-          "type": "LATENT",
-          "link": null
-        },
-        {
-          "name": "phantom_latent_4",
-          "shape": 7,
-          "type": "LATENT",
-          "link": null
-        },
-        {
-          "name": "vace_embeds",
-          "shape": 7,
-          "type": "WANVIDIMAGE_EMBEDS",
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
-          "name": "image_embeds",
-          "type": "WANVIDIMAGE_EMBEDS",
+          "name": "IMAGE",
+          "type": "IMAGE",
           "links": [
-            114
+            127
           ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
-        "ver": "1f535743870da83c530386874f10aabc70201919",
-        "Node name for S&R": "WanVideoPhantomEmbeds",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "comfy-core",
+        "ver": "0.3.29",
+        "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        81,
-        5,
-        0,
-        1
-      ],
-      "color": "#322",
-      "bgcolor": "#533"
+        "2025年5月13日1時02分.png",
+        "image"
+      ]
     },
     {
-      "id": 76,
-      "type": "VHS_VideoCombine",
+      "id": 80,
+      "type": "PreviewImage",
       "pos": [
-        1902.857177734375,
-        -49.418392181396484
+        1589.642822265625,
+        401.7226257324219
       ],
       "size": [
-        497.0513610839844,
-        1063.5770263671875
+        297.12420654296875,
+        246.00003051757812
       ],
       "flags": {},
-      "order": 25,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 126
-        },
-        {
-          "name": "audio",
-          "shape": 7,
-          "type": "AUDIO",
-          "link": null
-        },
-        {
-          "name": "meta_batch",
-          "shape": 7,
-          "type": "VHS_BatchManager",
-          "link": null
-        },
-        {
-          "name": "vae",
-          "shape": 7,
-          "type": "VAE",
-          "link": null
+          "link": 135
         }
       ],
-      "outputs": [
-        {
-          "name": "Filenames",
-          "type": "VHS_FILENAMES",
-          "links": null
-        }
-      ],
+      "outputs": [],
       "properties": {
-        "cnr_id": "comfyui-videohelpersuite",
-        "ver": "0a75c7958fe320efcb052f1d9f8451fd20c730a8",
-        "Node name for S&R": "VHS_VideoCombine",
-        "aux_id": "Kosinkadink/ComfyUI-VideoHelperSuite"
+        "cnr_id": "comfy-core",
+        "ver": "0.3.29",
+        "Node name for S&R": "PreviewImage"
       },
-      "widgets_values": {
-        "frame_rate": 24,
-        "loop_count": 0,
-        "filename_prefix": "WanVideo21_Phantom",
-        "format": "video/h264-mp4",
-        "pix_fmt": "yuv420p",
-        "crf": 19,
-        "save_metadata": true,
-        "trim_to_audio": false,
-        "pingpong": false,
-        "save_output": true,
-        "videopreview": {
-          "hidden": false,
-          "paused": false,
-          "params": {
-            "filename": "WanVideo21_Phantom_00013.mp4",
-            "subfolder": "",
-            "type": "output",
-            "format": "video/h264-mp4",
-            "frame_rate": 24,
-            "workflow": "WanVideo21_Phantom_00013.png",
-            "fullpath": "/workspace/ComfyUI/output/WanVideo21_Phantom_00013.mp4"
-          }
+      "widgets_values": []
+    },
+    {
+      "id": 63,
+      "type": "PreviewImage",
+      "pos": [
+        1591.5535888671875,
+        710.121826171875
+      ],
+      "size": [
+        297.12420654296875,
+        246.00006103515625
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 102
         }
-      }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.29",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 82,
+      "type": "Note",
+      "pos": [
+        394.2336120605469,
+        -525.91259765625
+      ],
+      "size": [
+        335.4073486328125,
+        153.22064208984375
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "fp8_fast は品質を大幅に低下させるようです。\n\nfp_16_fast は、最新の PyTorch ナイトリーで利用可能な「FP16 GEMM での完全な FP16 累積」機能を有効にします。これにより、約 20% の速度向上が期待できます。\n\nSageattn がインストールされている場合は、推論速度がほぼ 2 倍になります。\n"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 42,
+      "type": "Note",
+      "pos": [
+        46.65074920654297,
+        -379.48406982421875
+      ],
+      "size": [
+        297.4657897949219,
+        109.52696990966797
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "VRAMに応じてスワップするブロック数を調整します。これは速度とメモリ使用量のトレードオフです。\n\nあるいは、DiffSynt-Studiosで導入されたVRAM管理を使用するオプションもあります。これは通常速度は遅くなりますが、BlockSwapと比較してVRAMをさらに節約できます。"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     },
     {
       "id": 22,
@@ -1091,7 +879,7 @@
         254
       ],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -1142,10 +930,10 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "WanVideoModelLoader",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         "Wan14BT2VFusioniX_Phantom.safetensors",
@@ -1158,18 +946,94 @@
       "bgcolor": "#335"
     },
     {
+      "id": 36,
+      "type": "Note",
+      "pos": [
+        868.086181640625,
+        576.842529296875
+      ],
+      "size": [
+        327.4880065917969,
+        222.78529357910156
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "重要なFusionX設定：\n\nCFG: 1.0でなければならない - 高い値はFusionXで悪い結果を生む\nシフト: 解像度に依存（1024x576の場合は1、1080x720の場合は2）\nサンプラー: Wan FusionXにはuni_pcが推奨されます\nステップ: 最適なFusionXの速度/品質バランスのために6-10\nTeaCache: 低ステップ数のため推奨されません\n高度なFusionXパラメータ：\n\n低シフト（1-2）： Wan FusionXでより現実的な効果\n高シフト（3-9）： よりスタイライズされた芸術的な外観\nフレームレート: スムーズな動きのために24 FPSが推奨されます"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 28,
+      "type": "WanVideoDecode",
+      "pos": [
+        1272.173095703125,
+        -99.75385284423828
+      ],
+      "size": [
+        298.0249328613281,
+        174
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae",
+          "type": "WANVAE",
+          "link": 43
+        },
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            81,
+            126
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
+        "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
+        "Node name for S&R": "WanVideoDecode",
+        "cnr_id": "ComfyUI-WanVideoWrapper"
+      },
+      "widgets_values": [
+        false,
+        272,
+        272,
+        144,
+        128
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
       "id": 27,
       "type": "WanVideoSampler",
       "pos": [
-        800.9052734375,
-        -29.383058547973633
+        872.358154296875,
+        -86.54547119140625
       ],
       "size": [
-        347.9464416503906,
-        827.8392944335938
+        321.27972412109375,
+        607.2332153320312
       ],
       "flags": {},
-      "order": 22,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -1278,18 +1142,18 @@
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-WanVideoWrapper",
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
         "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
         "Node name for S&R": "WanVideoSampler",
-        "aux_id": "kijai/ComfyUI-WanVideoWrapper"
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
         8,
-        7.500000000000002,
-        5,
-        258257858288476,
+        1.0000000000000002,
+        3.0000000000000004,
+        58355839168208,
         "randomize",
-        false,
+        true,
         "unipc",
         0,
         1,
@@ -1298,43 +1162,124 @@
       ]
     },
     {
-      "id": 75,
-      "type": "LoadImage",
+      "id": 74,
+      "type": "WanVideoPhantomEmbeds",
       "pos": [
-        -1098.0748291015625,
-        31.673595428466797
+        398.4496154785156,
+        40.72762680053711
       ],
       "size": [
-        346.8157958984375,
-        467.43426513671875
+        348.1442565917969,
+        237.9500732421875
       ],
       "flags": {},
-      "order": 9,
+      "order": 22,
       "mode": 0,
-      "inputs": [],
-      "outputs": [
+      "inputs": [
         {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            127
-          ]
+          "name": "phantom_latent_1",
+          "type": "LATENT",
+          "link": 122
         },
         {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
+          "name": "phantom_latent_2",
+          "shape": 7,
+          "type": "LATENT",
+          "link": 123
+        },
+        {
+          "name": "phantom_latent_3",
+          "shape": 7,
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "phantom_latent_4",
+          "shape": 7,
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "vace_embeds",
+          "shape": 7,
+          "type": "WANVIDIMAGE_EMBEDS",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image_embeds",
+          "type": "WANVIDIMAGE_EMBEDS",
+          "links": [
+            114
+          ]
         }
       ],
       "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.29",
-        "Node name for S&R": "LoadImage"
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
+        "ver": "1f535743870da83c530386874f10aabc70201919",
+        "Node name for S&R": "WanVideoPhantomEmbeds",
+        "cnr_id": "ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
-        "2025年5月12日22時04分.png",
-        "image"
-      ]
+        121,
+        5,
+        0,
+        1
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 16,
+      "type": "WanVideoTextEncode",
+      "pos": [
+        -730.0460815429688,
+        -321.2693176269531
+      ],
+      "size": [
+        296.6340026855469,
+        286.6754150390625
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "t5",
+          "type": "WANTEXTENCODER",
+          "link": 15
+        },
+        {
+          "name": "model_to_offload",
+          "shape": 7,
+          "type": "WANVIDEOMODEL",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text_embeds",
+          "type": "WANVIDEOTEXTEMBEDS",
+          "slot_index": 0,
+          "links": [
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "kijai/ComfyUI-WanVideoWrapper",
+        "ver": "6099ad393b071728032fd481e96d77d2900eee2c",
+        "Node name for S&R": "WanVideoTextEncode",
+        "cnr_id": "ComfyUI-WanVideoWrapper"
+      },
+      "widgets_values": [
+        "羊の帽子を被った少女は手を振って歓迎しています。猫ちゃんが、少女の周りを優雅に歩いています。",
+        "",
+        true
+      ],
+      "color": "#332922",
+      "bgcolor": "#593930"
     },
     {
       "id": 67,
@@ -1348,7 +1293,7 @@
         467.43426513671875
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1371,9 +1316,87 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "Gemini_Generated_Image_fg155efg155efg15.png",
+        "2025年5月12日22時04分.png",
         "image"
       ]
+    },
+    {
+      "id": 76,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        1974.0843505859375,
+        -99.47313690185547
+      ],
+      "size": [
+        497.0513610839844,
+        1063.5770263671875
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 126
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "aux_id": "Kosinkadink/ComfyUI-VideoHelperSuite",
+        "ver": "0a75c7958fe320efcb052f1d9f8451fd20c730a8",
+        "Node name for S&R": "VHS_VideoCombine",
+        "cnr_id": "comfyui-videohelpersuite"
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "WanVideo21_Phantom",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "WanVideo21_Phantom_00010.mp4",
+            "subfolder": "",
+            "type": "output",
+            "format": "video/h264-mp4",
+            "frame_rate": 24,
+            "workflow": "WanVideo21_Phantom_00010.png",
+            "fullpath": "/workspace/ComfyUI/output/WanVideo21_Phantom_00010.mp4"
+          }
+        }
+      }
     }
   ],
   "links": [
@@ -1630,10 +1653,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.5644739300537773,
+      "scale": 0.6209213230591555,
       "offset": [
-        241.86811645670622,
-        386.37188804190936
+        1710.6846596996463,
+        739.7104054267306
       ]
     },
     "frontendVersion": "1.22.2",
