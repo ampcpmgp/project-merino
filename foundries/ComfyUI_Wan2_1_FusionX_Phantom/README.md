@@ -11,6 +11,7 @@
 
 - Select CUDA Versions 12.8 or higher
 - RTX 4090 or higher
+- set env CIVITAI_API_KEY from <https://civitai.com/user/account>
 - Deploy
 - See logs, wait to start a server
 - Connect to server (port 8188)
