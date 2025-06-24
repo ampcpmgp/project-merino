@@ -30,8 +30,12 @@ cd models
 huggingface-cli download Kijai/WanVideo_comfy umt5-xxl-enc-bf16.safetensors --local-dir text_encoders
 huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir clip_vision
 huggingface-cli download Kijai/WanVideo_comfy Wan2_1_VAE_bf16.safetensors --local-dir vae
+huggingface-cli download Kijai/WanVideo_comfy Wan2_1-VACE_module_14B_bf16.safetensors --local-dir diffusion_models
+
+echo "[Download Wan2.1 FusionX Phantom models]"
 cd diffusion_models
 wget -q -O Wan14BT2VFusioniX_Phantom.safetensors https://civitai.com/api/download/models/1878555?token=$CIVITAI_API_KEY
+
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
