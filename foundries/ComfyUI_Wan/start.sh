@@ -12,14 +12,14 @@ pip install -r requirements.txt
 
 echo "[Install ComfyUI custom nodes]"
 cd custom_nodes
-git clone https://github.com/ltdrdata/ComfyUI-Manager comfyui-manager
-git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
+git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/ltdrdata/ComfyUI-Manager comfyui-manager
+git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/kijai/ComfyUI-WanVideoWrapper.git
 pip install -r ComfyUI-WanVideoWrapper/requirements.txt
-git clone https://github.com/kijai/ComfyUI-KJNodes.git
+git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/kijai/ComfyUI-KJNodes.git
 pip install -r ComfyUI-KJNodes/requirements.txt
-git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
+git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 pip install -r ComfyUI-VideoHelperSuite/requirements.txt
-git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git
+git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/pythongosssss/ComfyUI-Custom-Scripts.git
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
