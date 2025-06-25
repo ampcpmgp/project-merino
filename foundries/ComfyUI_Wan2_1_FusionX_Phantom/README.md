@@ -16,5 +16,5 @@
 - Deploy
 - See logs, wait to start a server
 - Connect to ComfyUI server (port 8188)
-- Drag [workflow.json](https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_I2V_Native/workflow.json) file onto the screen.
+- Drag [workflow.json](https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_Phantom/workflow.json) file onto the screen.
 - Execute ComfyUI
