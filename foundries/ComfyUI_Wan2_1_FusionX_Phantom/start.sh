@@ -33,4 +33,5 @@ wget -q -O Wan14BT2VFusioniX_Phantom.safetensors https://civitai.com/api/downloa
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
-python main.py --listen
+python main.py --listen & python -m http.server 8000
+wait

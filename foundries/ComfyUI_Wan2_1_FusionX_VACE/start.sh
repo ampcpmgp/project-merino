@@ -36,7 +36,6 @@ echo "[Download Wan2.1 FusionX Phantom models]"
 cd diffusion_models
 wget -q -O Wan14BT2VFusioniX_Phantom.safetensors https://civitai.com/api/download/models/1878555?token=$CIVITAI_API_KEY
 
-
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
 python main.py --listen & python -m http.server 8000

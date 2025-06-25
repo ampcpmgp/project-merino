@@ -31,4 +31,6 @@ huggingface-cli download vrgamedevgirl84/Wan14BT2VFusioniX Wan14Bi2vFusioniX_fp1
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
-python main.py --listen
+python main.py --listen & python -m http.server 8000
+wait
+
