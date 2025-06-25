@@ -14,6 +14,6 @@
 - set env GITHUB_ACCESS_TOKEN from <https://github.com/settings/personal-access-tokens>
 - Deploy
 - See logs, wait to start a server
-- Connect to server (port 8188)
+- Connect to ComfyUI server (port 8188)
 - Drag [workflow.json](https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_I2V_Native/workflow.json) file onto the screen.
 - Execute ComfyUI

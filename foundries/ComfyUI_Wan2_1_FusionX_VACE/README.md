@@ -15,7 +15,7 @@
 - set env CIVITAI_API_KEY from <https://civitai.com/user/account>
 - Deploy
 - See logs, wait to start a server
-- Connect to server (port 8188)
+- Connect to ComfyUI server (port 8188)
 - Execute ComfyUI
 
 ## Additional Information

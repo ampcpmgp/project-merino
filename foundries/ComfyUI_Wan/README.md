@@ -14,8 +14,8 @@
 - set env GITHUB_ACCESS_TOKEN from <https://github.com/settings/personal-access-tokens>
 - Deploy
 - See logs, wait to start a server
-- Connect to server (port 8188)
-- Execute ComfyUI
+- Connect to ComfyUI server (port 8188)
+- Start to develop
 
 ## Additional Information
 
