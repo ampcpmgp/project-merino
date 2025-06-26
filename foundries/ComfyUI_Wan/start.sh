@@ -3,7 +3,7 @@ set -e
 
 echo "[Install ComfyUI]"
 cd /workspace
-git clone https://github.com/comfyanonymous/ComfyUI.git
+git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/comfyanonymous/ComfyUI.git
 
 echo "[Install ComfyUI dependencies]"
 cd ComfyUI

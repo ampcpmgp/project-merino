@@ -23,7 +23,7 @@
 
 ```bash
 cd /workspaces
-git clone https://github.com/thu-ml/SageAttention.git
+git clone --depth=1 https://github.com/thu-ml/SageAttention.git
 cd SageAttention
 python setup.py install
 ```
