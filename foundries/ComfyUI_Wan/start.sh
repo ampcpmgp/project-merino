@@ -23,5 +23,5 @@ git clone --depth=1 https://$GITHUB_ACCESS_TOKEN@github.com/pythongosssss/ComfyU
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
-python main.py --listen & python -m http.server 8000
+python main.py --listen & python -m http.server 9000
 wait

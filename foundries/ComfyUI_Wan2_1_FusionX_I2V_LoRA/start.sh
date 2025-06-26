@@ -36,5 +36,5 @@ huggingface-cli download Kijai/WanVideo_comfy Wan2_1-I2V-14B-720P_fp8_e5m2.safet
 
 echo "[Start ComfyUI]"
 cd /workspace/ComfyUI
-python main.py --listen & python -m http.server 8000
+python main.py --listen & python -m http.server 9000
 wait
