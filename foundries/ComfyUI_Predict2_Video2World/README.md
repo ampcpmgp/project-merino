@@ -15,4 +15,5 @@
 - Deploy
 - See logs, wait to start a server
 - Connect to ComfyUI server (port 8188)
+- Drag [workflow.json](https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Predict2_Video2World/workflow.json) file onto the screen.
 - Start to develop
