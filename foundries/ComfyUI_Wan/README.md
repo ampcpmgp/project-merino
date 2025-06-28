@@ -8,6 +8,9 @@
 
 - Select CUDA Versions 12.8 or higher
 - RTX 4090 or higher
+- (Optional) Edit Template below
+  - Container Disk Size
+  - Volume Disk Size
 - Deploy
 - Connect to ComfyUI server (port 8188)
 
