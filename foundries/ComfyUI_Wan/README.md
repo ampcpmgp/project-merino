@@ -11,20 +11,10 @@
 - Deploy
 - Connect to ComfyUI server (port 8188)
 
-## Additional Information
-
-### Install Sage Attention 2
-
-```bash
-cd /workspaces
-git clone --depth=1 https://github.com/thu-ml/SageAttention.git
-cd SageAttention
-python setup.py install
-```
-
 ## Develop
 
 ```bash
+# current version is here: https://hub.docker.com/r/ofuton/comfyui-wan/tags
 docker build -t ofuton/comfyui-wan:<SEM_VER> -t ofuton/comfyui-wan:latest .
 docker images
 docker push --all-tags ofuton/comfyui-wan
