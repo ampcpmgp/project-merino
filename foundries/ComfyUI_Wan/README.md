@@ -1,21 +1,15 @@
-# ComfyUI - Wan
+# ComfyUI_Wan
 
+- Source - <https://github.com/ampcpmgp/mofugao-lab/tree/main/foundries/ComfyUI_Wan>
 - RunPod Template - <https://console.runpod.io/deploy?template=ytr47drnpf&ref=1c1r2p2a>
-
-## Information
-
-- Container Image: runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04
-- Start Command: [start.sh](./start.sh)
+- Docker Hub - <https://hub.docker.com/r/ofuton/comfyui-wan>
 
 ## How to use on RunPod
 
 - Select CUDA Versions 12.8 or higher
 - RTX 4090 or higher
-- set env GITHUB_ACCESS_TOKEN from <https://github.com/settings/personal-access-tokens>
 - Deploy
-- See logs, wait to start a server
 - Connect to ComfyUI server (port 8188)
-- Start to develop
 
 ## Additional Information
 
@@ -26,4 +20,12 @@ cd /workspaces
 git clone --depth=1 https://github.com/thu-ml/SageAttention.git
 cd SageAttention
 python setup.py install
+```
+
+## Develop
+
+```bash
+docker build -t ofuton/comfyui-wan:<SEM_VER> -t ofuton/comfyui-wan:latest .
+docker images
+docker push --all-tags ofuton/comfyui-wan
 ```
