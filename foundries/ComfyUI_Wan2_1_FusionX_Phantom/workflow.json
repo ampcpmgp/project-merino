@@ -914,10 +914,10 @@
       },
       "widgets_values": [
         "Wan14BT2VFusioniX_Phantom.safetensors",
-        "fp16",
+        "fp16_fast",
         "disabled",
         "main_device",
-        "sdpa"
+        "sageattn"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -1199,7 +1199,7 @@
         "aux_id": "kijai/ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
-        121,
+        81,
         5,
         0,
         1
@@ -1251,7 +1251,7 @@
         "aux_id": "kijai/ComfyUI-WanVideoWrapper"
       },
       "widgets_values": [
-        "羊の帽子を被った少女は手を振って歓迎しています。猫ちゃんが、少女の周りを優雅に歩いています。",
+        "黄色い髪の女性が猫耳帽子を被り、ダンスしています。",
         "",
         true
       ],
