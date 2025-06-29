@@ -24,9 +24,12 @@ FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04
 COPY --from=builder /ComfyUI /ComfyUI
 
 WORKDIR /ComfyUI
+
 RUN pip install -r requirements.txt
 # https://github.com/thu-ml/SageAttention
 RUN pip install sageattention==1.0.6
+
+COPY extra_model_paths.yaml /ComfyUI
 
 WORKDIR /ComfyUI/custom_nodes
 RUN pip install -r ComfyUI-WanVideoWrapper/requirements.txt
@@ -37,4 +40,4 @@ WORKDIR /ComfyUI
 
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
-CMD ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

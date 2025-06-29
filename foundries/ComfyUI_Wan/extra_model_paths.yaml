@@ -1,0 +1,15 @@
+comfyui:
+  base_path: /workspace/comfyui_models/
+  is_default: true
+
+  checkpoints: checkpoints/
+  clip: clip/
+  clip_vision: clip_vision/
+  configs: configs/
+  controlnet: controlnet/
+  diffusion_models: diffusion_models/
+  embeddings: embeddings/
+  upscale_models: upscale_models/
+  loras: loras/
+  text_encoders: text_encoders/
+  vae: vae/
