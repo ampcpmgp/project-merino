@@ -1325,7 +1325,7 @@
         "fp16_fast",
         "fp8_e4m3fn",
         "offload_device",
-        "sdpa"
+        "sageattn"
       ],
       "color": "#223",
       "bgcolor": "#335"
