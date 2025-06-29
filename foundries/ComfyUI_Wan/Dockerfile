@@ -14,7 +14,7 @@ RUN git clone --depth=1 https://github.com/kijai/ComfyUI-WanVideoWrapper.git
 RUN git clone --depth=1 https://github.com/kijai/ComfyUI-KJNodes.git
 RUN git clone --depth=1 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
 RUN git clone --depth=1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git
-
+RUN git clone --depth=1 https://github.com/Fannovel16/comfyui_controlnet_aux.git
 
 # =============================================================
 # Stage 2: "runtime" - 最終的な実行環境ステージ
@@ -35,6 +35,7 @@ WORKDIR /ComfyUI/custom_nodes
 RUN pip install -r ComfyUI-WanVideoWrapper/requirements.txt
 RUN pip install -r ComfyUI-KJNodes/requirements.txt
 RUN pip install -r ComfyUI-VideoHelperSuite/requirements.txt
+RUN pip install -r comfyui_controlnet_aux/requirements.txt
 
 WORKDIR /ComfyUI
 
