@@ -1,6 +1,8 @@
-# ComfyUI - Wan
+# ComfyUI_Wan2_1_FusionX_VACE
 
-- RunPod Template - <https://console.runpod.io/deploy?template=ytr47drnpf&ref=1c1r2p2a>
+- Source - <https://github.com/ampcpmgp/mofugao-lab/tree/main/foundries/ComfyUI_Wan2_1_FusionX_VACE>
+- RunPod Template - <https://console.runpod.io/deploy?template=zgi0pp91xx&ref=1c1r2p2a>
+- Docker Hub - <https://hub.docker.com/r/ofuton/comfyui-wan2.1-fusionx-vace>
 
 ## Information
 
@@ -11,21 +13,23 @@
 
 - Select CUDA Versions 12.8 or higher
 - RTX 4090 or higher
-- set env GITHUB_ACCESS_TOKEN from <https://github.com/settings/personal-access-tokens>
+- (Optional) Edit Template
+  - Container Disk Size
+  - Volume Disk Size
 - set env CIVITAI_API_KEY from <https://civitai.com/user/account>
 - Deploy
-- See logs, wait to start a server
+- See logs, wait to start ComfyUI server
 - Connect to ComfyUI server (port 8188)
 - Drag [workflow.json](https://raw.githubusercontent.com/ampcpmgp/mofugao-lab/refs/heads/main/foundries/ComfyUI_Wan2_1_FusionX_VACE/workflow.json) file onto the screen.
+- Uploade video
 - Execute ComfyUI
 
-## Additional Information
-
-### Install Sage Attention 2
+## Develop
 
 ```bash
-cd /workspaces
-git clone --depth=1 https://github.com/thu-ml/SageAttention.git
-cd SageAttention
-python setup.py install
+# current version is here: https://hub.docker.com/r/ofuton/comfyui-wan2.1-fusionx-vace/tags
+docker build -t ofuton/comfyui-wan2.1-fusionx-vace:<SEM_VER> -t ofuton/comfyui-wan2.1-fusionx-vace:latest .
+docker images
+docker push --all-tags ofuton/comfyui-wan2.1-fusionx-vace
 ```
+
