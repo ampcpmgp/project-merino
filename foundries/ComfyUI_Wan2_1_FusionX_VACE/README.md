@@ -4,11 +4,6 @@
 - RunPod Template - <https://console.runpod.io/deploy?template=zgi0pp91xx&ref=1c1r2p2a>
 - Docker Hub - <https://hub.docker.com/r/ofuton/comfyui-wan2.1-fusionx-vace>
 
-## Information
-
-- Container Image: runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04
-- Start Command: [start.sh](./start.sh)
-
 ## How to use on RunPod
 
 - Select CUDA Versions 12.8 or higher
