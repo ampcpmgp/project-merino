@@ -10,7 +10,7 @@
 - RTX 4090 or higher
 - (Optional) Edit Template
   - Container Disk Size
-  - Volume Disk Size
+  - Volume Disk Size (If you want to use only temporary storage, set it to 0GB)
 - set env CIVITAI_API_KEY from <https://civitai.com/user/account>
 - Deploy
 - See logs, wait to start ComfyUI server

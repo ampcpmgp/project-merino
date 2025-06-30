@@ -9,7 +9,7 @@
 - RTX 4090 or higher
 - (Optional) Edit Template
   - Container Disk Size
-  - Volume Disk Size (If you want to persist models, must be greater than 0GB)
+  - Volume Disk Size (If you want to use only temporary storage, set it to 0GB)
 - Deploy
 - Connect to ComfyUI server (port 8188)
 
