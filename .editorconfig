@@ -1,0 +1,6 @@
+# このファイルがプロジェクトのルートであることを示す
+root = true
+
+# foundries/ ディレクトリ配下のすべてのファイルに適用
+[foundries/**]
+end_of_line = lf
