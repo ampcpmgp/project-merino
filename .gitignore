@@ -4,3 +4,4 @@
 _.tmp/*
 .obsidian
 .crush
+.env

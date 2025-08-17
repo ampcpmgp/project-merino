@@ -2,10 +2,18 @@
 
 set -euo pipefail
 
+if [ -f .env ]; then
+  # exportしないとサブシェルやコマンドから参照できない
+  export $(grep -v '^#' .env | xargs)
+fi
+
 # Install pnpm
 echo "ℹ️ pnpm をインストール中..."
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 echo "✅ pnpm v$(pnpm --version) がインストールされました。"
+
+echo "ℹ️ cloudflared をバックグラウンドで起動中..."
+cloudflared tunnel run --token ${CLOUDFLARED_TOKEN:-} &
 
 # https://docs.n8n.io/hosting/installation/npm/
 pnpm install --dangerously-allow-all-builds -g n8n sqlite3 minimist chai claude-code ccusage crush opencode-ai @charmland/crush
