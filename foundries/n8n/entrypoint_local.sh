@@ -3,11 +3,9 @@
 set -euo pipefail
 
 if [ -f .env ]; then
-  # exportしないとサブシェルやコマンドから参照できない
   export $(grep -v '^#' .env | xargs)
 fi
 
-# Install pnpm
 echo "ℹ️ pnpm をインストール中..."
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 echo "✅ pnpm v$(pnpm --version) がインストールされました。"
