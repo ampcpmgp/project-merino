@@ -33,8 +33,6 @@ export NODE_FUNCTION_ALLOW_BUILTIN=*
 export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
 echo "ℹ️ n8n を起動中..."
 n8n start &
-
-echo "ℹ️ n8n の起動を待機中..."
 sleep 10
 
 echo "ℹ️ cloudflared をバックグラウンドで起動中..."
