@@ -1,7 +1,7 @@
 .思考整理.md
 *.code-workspace
 .vscode/settings.json
-_.tmp/*
+.tmp/*
 .obsidian
 .crush
 .env

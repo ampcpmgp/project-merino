@@ -12,9 +12,6 @@ if [ ! -f "${ENV_FILE}" ]; then
 fi
 export $(grep -v '^#' "${ENV_FILE}" | xargs)
 
-echo "ℹ️ cloudflared をバックグラウンドで起動中..."
-cloudflared tunnel run --token ${CLOUDFLARED_TOKEN} &
-
 echo "ℹ️ pnpm をインストール中..."
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 echo "✅ pnpm v$(pnpm --version) がインストールされました。"
@@ -35,4 +32,12 @@ export N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 export NODE_FUNCTION_ALLOW_BUILTIN=*
 export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
 echo "ℹ️ n8n を起動中..."
-n8n start
+n8n start &
+
+echo "ℹ️ n8n の起動を待機中..."
+sleep 10
+
+echo "ℹ️ cloudflared をバックグラウンドで起動中..."
+cloudflared tunnel run --token ${CLOUDFLARED_TOKEN} &
+
+sleep infinity
