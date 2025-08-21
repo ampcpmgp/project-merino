@@ -8,31 +8,7 @@
 - Zero Trust を作成し、 CloudFlare Tunnel をセットアップします。
 - `foundries/n8n/.env.example` をコピーして `.env` を作成、上記で設定した値を N8N_URL, CLOUDFLARED_TOKEN に反映します。
 
-### n8n Setup
-
-以下を powershell で実行する
-
-```powershell
-# show available WSL distributions
-wsl --list --online
-
-# Show installed WSL distributions
-wsl --list --verbose
-
-# Download and Start WSL with Ubuntu 24.04
-# Input `appuser` as username and secure password when prompted
-wsl --install Ubuntu-24.04 --name Ubuntu-24.04-n8n
-
-# ルート権限になってから実行
-sudo -s
-./foundries/n8n/entrypoint.sh
-```
-
-起動後、指定のURLに n8n が表示されることを確認します。
-
-### Persistent Storage
-
-Runpod の S3 互換 Storage を使用する場合、以下の手順を実行します。 (他のストレージも利用可能です)
+### Runpod Storage Setup
 
 - [Runpod Storage](https://console.runpod.io/user/storage) から S3 API Key を作成します
 - 次に Network Volumne から S3 互換 Storage を作成します。
@@ -44,17 +20,30 @@ Runpod の S3 互換 Storage を使用する場合、以下の手順を実行し
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
 - AWS_DEFAULT_REGION
+- AWS_ENDPOINT_URL
+- AWS_BUCKET_NAME
+
+### Start n8n
+
+以下を powershell で実行する
+
+```powershell
+.\foundries\n8n\entrypoint.ps1
+```
+
+### Backup workflow
+
+TBA
 
 ### Cleanup
 
 開発終了後、 cleanup するため powershell から以下を実行し削除します。
 
 ```powershell
-wsl --terminate Ubuntu-24.04-n8n
 wsl --unregister Ubuntu-24.04-n8n
 ```
 
-開発終了後に停止のみ行い、再度 WSL を起動する場合は powershell から以下を実行します。ただし、不安定になるため非推奨です。
+開発終了後に停止のみ行い、再度 WSL を起動する場合は powershell から以下を実行します。
 
 ```powershell
 wsl --terminate Ubuntu-24.04-n8n
