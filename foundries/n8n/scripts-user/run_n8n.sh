@@ -7,18 +7,19 @@ ENV_FILE="${SCRIPT_DIR}/../.env"
 export $(grep -E '^N8N_URL=|AWS_ACCESS_KEY_ID=|^AWS_SECRET_ACCESS_KEY=|^AWS_DEFAULT_REGION=|^AWS_ENDPOINT_URL=|^AWS_BUCKET_NAME=' "${ENV_FILE}")
 
 # 独自設定（プレフィックスで明確に区別）
-export CUSTOM_N8N_BACKUP_DIR="$HOME/.n8n_backup"
 export CUSTOM_N8N_TAR_FILE="n8n.tar.gz"
-export CUSTOM_N8N_TAR_FILE_PATH="$CUSTOM_N8N_BACKUP_DIR/$CUSTOM_N8N_TAR_FILE"
+export CUSTOM_N8N_TAR_FILE_PATH="$HOME/$CUSTOM_N8N_TAR_FILE"
+export CUSTOM_N8N_BACKUP_DIR="$HOME/n8n_backup"
 
 # https://docs.n8n.io/hosting/configuration/configuration-examples/user-folder/
-export N8N_USER_FOLDER="$HOME/n8n"
+export N8N_USER_FOLDER="$HOME/n8n_data"
 
+# 永続ストレージに CUSTOM_N8N_TAR_FILE が存在する場合はダウンロードと展開を行う
 if aws s3api head-object --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$AWS_BUCKET_NAME" --key "$CUSTOM_N8N_TAR_FILE" > /dev/null 2>&1; then
   echo "ℹ️ ファイル s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE が見つかりました。ダウンロードと展開を開始します。"
 
   aws s3 cp --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" "s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE" "$CUSTOM_N8N_TAR_FILE_PATH"
-  tar --use-compress-program="pigz" -xf "$CUSTOM_N8N_TAR_FILE_PATH"
+  tar --use-compress-program="pigz" -xf "$CUSTOM_N8N_TAR_FILE_PATH" -C "$HOME"
   echo "✅ 展開が完了しました"
 else
   # ファイルが存在しない場合の処理
@@ -37,6 +38,8 @@ export N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 # https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/
 export NODE_FUNCTION_ALLOW_BUILTIN=*
 export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
+# https://docs.n8n.io/hosting/configuration/configuration-examples/time-zone/
+export GENERIC_TIMEZONE=Asia/Tokyo
 
 echo "ℹ️ n8n を起動中..."
 n8n start
