@@ -22,7 +22,7 @@
 ### 共通定義
 
 - AAA (Arrange, Act, Assert) パターンに従う
-- テスト後に不要なデータが残れば AAAC (Arrange, Act, Assert, Cleanup) パターンに従う
+- テスト後に不要なデータが残る場合、 AAAC (Arrange, Act, Assert, Cleanup) パターンに従う
 
 ### ✅ ユニットテスト
 
