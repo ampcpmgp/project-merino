@@ -14,4 +14,10 @@ curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyri
 echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | tee /etc/apt/sources.list.d/cloudflared.list
 
 apt update
-apt install -y build-essential python3 cloudflared curl unzip jq tree ca-certificates git sudo vim pkg-config lsof
+apt install -y build-essential python3 cloudflared curl unzip jq tree ca-certificates git sudo vim pkg-config lsof pigz
+
+# Install AWS CLI v2
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+rm -rf awscliv2.zip
+sudo ./aws/install

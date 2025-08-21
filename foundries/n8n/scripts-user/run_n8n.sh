@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 ENV_FILE="${SCRIPT_DIR}/../.env"
-export $(grep '^N8N_URL=' "${ENV_FILE}")
+export $(grep '^N8N_URL=|AWS_ACCESS_KEY_ID=|^AWS_SECRET_ACCESS_KEY=|^AWS_DEFAULT_REGION=' "${ENV_FILE}")
 
 # https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/
 export N8N_RUNNERS_ENABLED=true
