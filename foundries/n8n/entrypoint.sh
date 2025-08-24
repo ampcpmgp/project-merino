@@ -9,7 +9,6 @@ ROOT_SCRIPT_DIR=$THIS_DIR/scripts-root
 ${ROOT_SCRIPT_DIR}/add_appuser.sh
 ${ROOT_SCRIPT_DIR}/install_apt_dependencies.sh
 su - appuser -c "${USER_SCRIPT_DIR}/install_bun_dependencies.sh"
-su - appuser -c "${USER_SCRIPT_DIR}/run_n8n.sh" &
-sleep 10 # Wait for n8n to start
-su - appuser -c "${USER_SCRIPT_DIR}/run_cloudflared.sh" &
-sleep infinity # Keep the script running
+su - appuser -c "${USER_SCRIPT_DIR}/run_n8n.sh"
+su - appuser -c "${USER_SCRIPT_DIR}/run_cloudflared.sh"
+sleep infinity

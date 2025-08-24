@@ -45,4 +45,11 @@ export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
 export GENERIC_TIMEZONE=Asia/Tokyo
 
 echo "ℹ️ n8n を起動中..."
-n8n start
+n8n start &
+
+while ! nc -z localhost ${N8N_PORT}; do
+  sleep 1
+done
+
+echo "✅ Port ${N8N_PORT} で n8n が起動しました"
+
