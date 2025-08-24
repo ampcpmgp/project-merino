@@ -33,12 +33,13 @@ echo "✅ Node.js のインストールが完了しました。"
 
 echo "ℹ️ bun 依存関係をインストール中..."
 bun add -g \
-  n8n@1.106.3 \
-  @anthropic-ai/claude-code@1.0.81 \
-  ccusage@15.9.7 \
+  n8n@1.107.4 \
+  @anthropic-ai/claude-code@1.0.89 \
+  ccusage@16.2.0 \
   yarn@1.22.22 \
-  opencode-ai@0.5.1 \
-  @charmland/crush@0.6.2 \
+  opencode-ai@0.5.18 \
+  @charmland/crush@0.7.1 \
   minimist@1.2.8 \
-  chai@5.2.1
+  chai@6.0.1
+
 echo "✅ bun 依存関係がインストールされました。"
