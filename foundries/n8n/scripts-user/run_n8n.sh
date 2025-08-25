@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 ENV_FILE="${SCRIPT_DIR}/../.env"
-export $(grep -E '^N8N_URL=|AWS_ACCESS_KEY_ID=|^AWS_SECRET_ACCESS_KEY=|^AWS_DEFAULT_REGION=|^AWS_ENDPOINT_URL=|^AWS_BUCKET_NAME=|^ANTHROPIC_API_KEY=|^OPEN_ROUTER_API_KEY=' "${ENV_FILE}")
+export $(grep -v '^\s*#' .env | grep -v '^$' | xargs)
 
 # 独自設定（プレフィックスで明確に区別）
 export CUSTOM_N8N_TAR_FILE="n8n.tar.gz"
