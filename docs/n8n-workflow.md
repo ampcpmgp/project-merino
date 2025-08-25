@@ -20,8 +20,8 @@
 
 ### 共通定義
 
-- AAA (Arrange, Act, Assert) パターンに従う
-- テスト後に不要なデータが残る場合、 AAAC (Arrange, Act, Assert, Cleanup) パターンに従う
+- 一般ケース: AAA (Arrange, Act, Assert) パターンを利用する
+- Cleanup が必要なケース: CAAAC (Cleanup, Arrange, Act, Assert, Cleanup) パターンを利用する
 
 ### ✅ 内部ノードテスト
 
