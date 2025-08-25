@@ -34,7 +34,7 @@ echo "✅ Node.js のインストールが完了しました。"
 echo "ℹ️ bun 依存関係をインストール中..."
 bun add -g \
   n8n@1.107.4 \
-  @anthropic-ai/claude-code@1.0.89 \
+  @anthropic-ai/claude-code@1.0.90 \
   ccusage@16.2.0 \
   yarn@1.22.22 \
   opencode-ai@0.5.18 \
