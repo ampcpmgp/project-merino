@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 ENV_FILE="${SCRIPT_DIR}/../.env"
-export $(grep -v '^\s*#' .env | grep -v '^$' | xargs)
+export $(grep -v '^\s*#' "$ENV_FILE" | grep -v '^$' | xargs)
 
 # 独自設定（プレフィックスで明確に区別）
 export CUSTOM_N8N_TAR_FILE="n8n.tar.gz"
