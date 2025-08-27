@@ -35,17 +35,16 @@
 
 TBA
 
-### Cleanup
+### Cleanup & Start
 
-開発終了後、 cleanup するため powershell から以下を実行し削除します。
+サーバー停止後、再度実行する場合は以下コマンドを実行します。
 
 ```powershell
-wsl --unregister Ubuntu-24.04-n8n
+wsl --unregister Ubuntu-24.04-n8n | .\foundries\n8n\entrypoint.ps1
 ```
 
-開発終了後に停止のみ行い、再度 WSL を起動する場合は powershell から以下を実行します。
+開発中に WSL に別 shell から入る場合、以下を実行します。
 
 ```powershell
-wsl --terminate Ubuntu-24.04-n8n
 wsl --distribution Ubuntu-24.04-n8n --user root
 ```
