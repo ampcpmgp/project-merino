@@ -18,11 +18,27 @@ aws configure set default.s3.multipart_chunksize 5MB # デフォルトは8MB
 aws configure set default.cli_read_timeout 300 # デフォルトは60秒
 aws configure set default.cli_connect_timeout 300 # デフォルトは60秒
 
+# リトライ待機時間（秒）
+RETRY_WAIT_SECONDS=15
+
 # 永続ストレージに CUSTOM_N8N_TAR_FILE が存在する場合はダウンロードと展開を行う
 if aws s3api head-object --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$AWS_BUCKET_NAME" --key "$CUSTOM_N8N_TAR_FILE" > /dev/null 2>&1; then
   echo "ℹ️ ファイル s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE が見つかりました。ダウンロードと展開を開始します。"
 
-  aws s3 cp --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" "s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE" "$CUSTOM_N8N_TAR_FILE_PATH"
+  # 成功するまでダウンロードを試行する
+  # 以下エラーの対策
+  # download failed: s3://xxxxxxxx/n8n.tar.gz to ./n8n.tar.gz An error occurred (SignatureDoesNotMatch) when calling the GetObject operation: Unable to authenticate request: signature does not match any shared API key for specified user ID
+  while true
+  do
+    if aws s3 cp --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" "s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE" "$CUSTOM_N8N_TAR_FILE_PATH"; then
+      echo "✅ ダウンロードが完了しました。"
+      break
+    fi
+    
+    echo "⚠️ ダウンロードに失敗しました。$RETRY_WAIT_SECONDS 秒後にリトライします..."
+    sleep $RETRY_WAIT_SECONDS
+  done
+
   tar --use-compress-program="pigz" -xf "$CUSTOM_N8N_TAR_FILE_PATH" -C "$HOME"
   echo "✅ 展開が完了しました"
 else
