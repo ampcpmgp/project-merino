@@ -5,3 +5,8 @@
 .obsidian
 .crush
 .env
+opencode.jsonc
+.crush.json
+.claude/settings.local.json
+.mcp.json
+.tmp-n8n
