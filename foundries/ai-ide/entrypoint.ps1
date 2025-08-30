@@ -21,4 +21,4 @@ Write-Host "Importing $distroName..."
 wsl --import $distroName $imageDir $outputFile
 Write-Host "Import complete."
 
-wsl -d $distroName -u root -- ./foundries/n8n/entrypoint.sh
+wsl -d $distroName -u root -- ./foundries/ai-ide/entrypoint.sh
