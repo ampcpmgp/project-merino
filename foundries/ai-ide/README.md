@@ -28,7 +28,7 @@
 以下を powershell で実行する
 
 ```powershell
-.\foundries\n8n\entrypoint.ps1
+.\foundries\ai-ide\entrypoint.ps1
 ```
 
 ### Backup workflow
@@ -40,11 +40,11 @@ TBA
 サーバー停止後、再度実行する場合は以下コマンドを実行します。
 
 ```powershell
-wsl --unregister Ubuntu-24.04-n8n | .\foundries\n8n\entrypoint.ps1
+wsl --unregister Ubuntu-24.04-ai-ide | .\foundries\ai-ide\entrypoint.ps1
 ```
 
 開発中に WSL に別 shell から入る場合、以下を実行します。
 
 ```powershell
-wsl --distribution Ubuntu-24.04-n8n --user root
+wsl --distribution Ubuntu-24.04-ai-ide --user root
 ```
