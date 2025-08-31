@@ -5,3 +5,10 @@
 .obsidian
 .crush
 .env
+
+# ai-ide
+opencode.jsonc
+.crush.json
+.claude/settings.local.json
+.mcp.json
+.tmp-n8n
