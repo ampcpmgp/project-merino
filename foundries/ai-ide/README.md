@@ -7,6 +7,9 @@
 - [CloudFlare](https://www.cloudflare.com/ja-jp/) アカウントを作成し、[ドメインを登録](https://dash.cloudflare.com/3585af39fca4c51968b1a42a2e3da8eb/registrar/register)します。
 - Zero Trust を作成し、 CloudFlare Tunnel をセットアップします。
 - `foundries/ai-ide/.env.example` をコピーして `.env` を作成、上記で設定した値を N8N_URL, CLOUDFLARED_TOKEN に反映します。
+- 設定後、 Tunnels から 設定→パブリックホスト名→編集→接続 を開き、以下設定を行う
+  - アイドル接続の有効期限 900
+  - TCPキープアライブ間隔 15
 
 ### Runpod Storage Setup
 
@@ -28,7 +31,7 @@
 以下を powershell で実行する
 
 ```powershell
-.\foundries\n8n\entrypoint.ps1
+.\foundries\ai-ide\entrypoint.ps1
 ```
 
 ### Backup workflow
@@ -40,11 +43,11 @@ TBA
 サーバー停止後、再度実行する場合は以下コマンドを実行します。
 
 ```powershell
-wsl --unregister Ubuntu-24.04-n8n | .\foundries\n8n\entrypoint.ps1
+wsl --unregister Ubuntu-24.04-ai-ide | .\foundries\ai-ide\entrypoint.ps1
 ```
 
 開発中に WSL に別 shell から入る場合、以下を実行します。
 
 ```powershell
-wsl --distribution Ubuntu-24.04-n8n --user root
+wsl --distribution Ubuntu-24.04-ai-ide --user root
 ```

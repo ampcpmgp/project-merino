@@ -23,7 +23,9 @@
 ### 共通定義
 
 - 一般ケース: AAA (Arrange, Act, Assert) パターンを利用する
-- Cleanup が必要なケース: CAAAC (Cleanup, Arrange, Act, Assert, Cleanup) パターンを利用する ^1
+- Cleanup が必要なケース
+  - CSAAAC (Cleanup, Setup, Arrange, Act, Assert, Cleanup) パターンを利用する ^1
+  - 内側と外側の Cleanup は他のテストで利用できる場合、サンドイッチ構造にできる
 
 ^1 途中実行時 Act が実行されない場合があるため、 Cleanup を最初に実行する
 
