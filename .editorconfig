@@ -1,6 +1,7 @@
 # このファイルがプロジェクトのルートであることを示す
 root = true
 
-# foundries/ ディレクトリ配下のすべてのファイルに適用
-[foundries/**]
+# すべてのファイルに適用
+[**]
 end_of_line = lf
+insert_final_newline = true
