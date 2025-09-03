@@ -4,19 +4,20 @@
 
 ## 動画作成・共通
 
-- [開発フロー](./キャラクター/_共通/開発フローv0.md)
-- [テーマ](./キャラクター/_共通/テーマ.md)
+- [開発フロー](./characters/_general/開発フローv0.md)
+- [テーマ](./characters/_general/テーマ.md)
 
 ## キャラクター
 
-- [もこもこメリノ](./キャラクター/もこもこメリノ/README.md)
-- [琥珀ハル](./キャラクター/琥珀ハル/README.md)
+- [もこもこメリノ](./characters/merino/README.md)
+- [琥珀](./characters/kohaku/README.md)
+- [オニキス](./characters/onyx/ペルソナ.md)
 
 ## ライセンス
 
-キャラクターに関するライセンスは [LICENSE.md](./キャラクター/LICENSE.md) を参照してください。
+キャラクターに関するライセンスは [LICENSE.md](./LICENSE.md) を参照してください。
 
-キャラクター作成ガイドラインは [GUIDELINE.md](./キャラクター/GUIDELINE.md) を参照してください。
+キャラクター作成ガイドラインは [GUIDELINE.md](./GUIDELINE.md) を参照してください。
 
 ## ロードマップ
 
