@@ -5,8 +5,6 @@ FROM ubuntu:24.04
 # Set non-interactive frontend
 ARG DEBIAN_FRONTEND=noninteractive
 
-
-
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
