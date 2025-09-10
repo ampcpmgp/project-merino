@@ -1,0 +1,102 @@
+
+# Base image
+FROM ubuntu:24.04
+
+# Set non-interactive frontend
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Build arguments from .env.example
+ARG N8N_URL
+ARG CLOUDFLARED_TOKEN
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+ARG AWS_DEFAULT_REGION
+ARG AWS_ENDPOINT_URL
+ARG AWS_BUCKET_NAME
+ARG OPEN_ROUTER_API_KEY
+ARG ANTHROPIC_API_KEY
+ARG GITHUB_USER_NAME
+ARG GITHUB_PERSONAL_ACCESS_TOKEN
+ARG GITHUB_REPOSITORY_NAME
+ARG N8N_API_KEY
+
+# Environment variables
+ENV N8N_URL=${N8N_URL}
+ENV CLOUDFLARED_TOKEN=${CLOUDFLARED_TOKEN}
+ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+ENV AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+ENV AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL}
+ENV AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+ENV OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
+ENV ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+ENV GITHUB_USER_NAME=${GITHUB_USER_NAME}
+ENV GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
+ENV GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY_NAME}
+ENV N8N_API_KEY=${N8N_API_KEY}
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    curl \
+    unzip \
+    jq \
+    tree \
+    ca-certificates \
+    git \
+    sudo \
+    vim \
+    pkg-config \
+    lsof \
+    pigz \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cloudflared
+RUN mkdir -p --mode=0755 /usr/share/keyrings \
+    && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \
+    && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | tee /etc/apt/sources.list.d/cloudflared.list \
+    && apt-get update && apt-get install -y cloudflared \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf awscliv2.zip aws
+
+# Create a non-root user
+RUN useradd -m -s /bin/bash appuser && \
+    echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Set up working directory
+WORKDIR /home/appuser/app
+COPY . .
+
+# Install bun, fnm, and node packages as appuser
+USER appuser
+RUN bash -c "curl -fsSL https://fnm.vercel.app/install | bash"
+ENV PATH="/home/appuser/.local/share/fnm:$PATH"
+RUN bash -c "fnm env"
+RUN bash -c "fnm install v24 && fnm default v24"
+
+RUN bash -c "curl -fsSL https://bun.sh/install | bash"
+ENV BUN_INSTALL="/home/appuser/.bun"
+ENV PATH="$BUN_INSTALL/bin:$PATH"
+
+RUN bun add -g \
+    n8n@1.109.2 \
+    @anthropic-ai/claude-code@1.0.108 \
+    ccusage@16.2.3 \
+    yarn@1.22.22 \
+    opencode-ai@0.6.5 \
+    @charmland/crush@0.7.6 \
+    minimist@1.2.8 \
+    chai@6.0.1
+
+# Expose n8n port
+EXPOSE 5678
+
+# Set entrypoint
+USER root
+ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
