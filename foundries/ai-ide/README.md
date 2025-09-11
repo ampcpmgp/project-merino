@@ -1,6 +1,6 @@
-# n8n
+# ai-ide
 
-## Local Development with WSL
+## Setup
 
 ### CloudFlare Tunnel Setup
 
@@ -26,28 +26,32 @@
 - AWS_ENDPOINT_URL
 - AWS_BUCKET_NAME
 
-### Start n8n
+## Docker build
 
-以下を powershell で実行する
+```bash
+cd foundries/ai-ide
 
-```powershell
-.\foundries\ai-ide\entrypoint.ps1
+CURRENT_VERSION=$(cat VERSION)
+
+docker build -t ofuton/ai-ide:${CURRENT_VERSION} -t ofuton/ai-ide:latest .
+docker images
+docker push --all-tags ofuton/ai-ide
 ```
 
-### Backup workflow
+## Local Development WSL
 
-TBA
+### Start Docker
 
-### Cleanup & Start
+以下を wsl 上で実行する
 
-サーバー停止後、再度実行する場合は以下コマンドを実行します。
+```bash
+cd foundries/ai-ide
 
-```powershell
-wsl --unregister Ubuntu-24.04-ai-ide | .\foundries\ai-ide\entrypoint.ps1
+docker run -it --rm --env-file .env --name ai-ide ofuton/ai-ide:latest
 ```
 
-開発中に WSL に別 shell から入る場合、以下を実行します。
+実行中に shell に入りたい場合は、以下コマンドを入力する
 
-```powershell
-wsl --distribution Ubuntu-24.04-ai-ide --user root
+```bash
+docker exec -it ai-ide /bin/bash
 ```
