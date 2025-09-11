@@ -58,7 +58,6 @@ RUN bun add -g \
     n8n@1.109.2 \
     @anthropic-ai/claude-code@1.0.108 \
     ccusage@16.2.3 \
-    yarn@1.22.22 \
     opencode-ai@0.6.5 \
     @charmland/crush@0.7.6 \
     minimist@1.2.8 \
