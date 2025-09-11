@@ -26,7 +26,7 @@
 - AWS_ENDPOINT_URL
 - AWS_BUCKET_NAME
 
-## Docker build
+## Docker build & publish
 
 ```bash
 cd foundries/ai-ide
