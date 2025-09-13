@@ -3,4 +3,4 @@
 set -euo pipefail
 
 echo "ℹ️ cloudflared を起動中..."
-cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}
+cloudflared tunnel run --token "${CLOUDFLARED_TOKEN_N8N}"

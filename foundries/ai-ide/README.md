@@ -6,7 +6,7 @@
 
 - [CloudFlare](https://www.cloudflare.com/ja-jp/) アカウントを作成し、[ドメインを登録](https://dash.cloudflare.com/3585af39fca4c51968b1a42a2e3da8eb/registrar/register)します。
 - Zero Trust を作成し、 CloudFlare Tunnel をセットアップします。
-- `foundries/ai-ide/.env.example` をコピーして `.env` を作成、上記で設定した値を N8N_URL, CLOUDFLARED_TOKEN に反映します。
+- `foundries/ai-ide/.env.example` をコピーして `.env` を作成、上記で設定した値を N8N_URL, CLOUDFLARED_TOKEN_N8N に反映します。
 - 設定後、 Tunnels から 設定→パブリックホスト名→編集→接続 を開き、以下設定を行う
   - アイドル接続の有効期限 900
   - TCPキープアライブ間隔 15
