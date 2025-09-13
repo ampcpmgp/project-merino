@@ -12,9 +12,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # code-serverのインストール
-RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --dry-run
+RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# 設定ファイルをコンテナ内にコピー
+# 各種ファイルをコピー
+COPY VERSION /
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY config/nginx.conf /etc/nginx/sites-available/default
 
