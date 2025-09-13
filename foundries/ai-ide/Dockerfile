@@ -69,6 +69,11 @@ RUN bun add -g \
     minimist@1.2.8 \
     chai@6.0.1
 
+# Create code-server config directory and copy settings as root
+# The settings.json file should be placed in a 'config' directory next to the Dockerfile
+RUN mkdir -p /home/appuser/.local/share/code-server/User
+COPY config/settings.json /home/appuser/.local/share/code-server/User/settings.json
+
 WORKDIR /home/appuser/app
 COPY . .
 
