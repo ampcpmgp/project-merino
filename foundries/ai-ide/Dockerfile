@@ -23,14 +23,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dos2unix \
     gosu \
     netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+    gnupg \
+    supervisor \
+    nginx \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# code-serverのインストール
+RUN curl -fsSL https://code-server.dev/install.sh | sh
 
 # Install cloudflared
 RUN mkdir -p --mode=0755 /usr/share/keyrings \
     && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \
     && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | tee /etc/apt/sources.list.d/cloudflared.list \
     && apt-get update && apt-get install -y cloudflared \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install AWS CLI v2
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
@@ -63,27 +69,19 @@ RUN bun add -g \
     minimist@1.2.8 \
     chai@6.0.1
 
-# Set up working directory
 WORKDIR /home/appuser/app
 COPY . .
+
+# Set up root user
+USER root
+RUN mkdir -p /workspace/public && \
+    chown -R appuser:appuser /workspace
+COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY config/nginx.conf /etc/nginx/sites-available/default
 
 # Convert all .sh files to unix format to avoid CRLF issues
 RUN find . -type f -name "*.sh" -exec dos2unix {} \;
 
-# Expose n8n port
-EXPOSE 8100
-
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
-
-# Install nginx and supervisor
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    nginx \
-    supervisor \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy configuration files
-COPY config/nginx.conf /etc/nginx/nginx.conf
-COPY config/supervisord.conf /etc/supervisord.conf
-
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

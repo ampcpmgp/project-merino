@@ -27,6 +27,7 @@ fi
 # https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/
 export N8N_RUNNERS_ENABLED=true
 # https://docs.n8n.io/hosting/configuration/environment-variables/deployment/
+export N8N_PORT=8100
 export N8N_EDITOR_BASE_URL="${N8N_URL}"
 export N8N_PUSH_BACKEND=websocket
 # https://docs.n8n.io/hosting/configuration/environment-variables/endpoints/
@@ -40,8 +41,4 @@ export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
 export GENERIC_TIMEZONE=Asia/Tokyo
 
 echo "ℹ️ n8n を起動中..."
-n8n start &
-
-"$(dirname $0)/wait-for-port.sh" "${N8N_PORT}"
-
-echo "✅ Port ${N8N_PORT} で n8n が起動しました"
+n8n start
