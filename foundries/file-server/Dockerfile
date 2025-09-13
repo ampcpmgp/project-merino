@@ -23,8 +23,7 @@ COPY config/nginx.conf /etc/nginx/sites-available/default
 # /workspace ディレクトリは docker run 時にボリュームマウントされることを想定
 RUN mkdir -p /workspace/public \
     /var/log/supervisor \
-    /var/run/code-server \
-    && chown -R root:root /var/run/code-server
+    /var/run/code-server
 
 # Nginx と code-server のポートを開放
 EXPOSE 80 8080
