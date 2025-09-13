@@ -31,9 +31,7 @@
 ```bash
 cd foundries/ai-ide
 
-CURRENT_VERSION=$(cat VERSION)
-
-docker build -t ofuton/ai-ide:${CURRENT_VERSION} -t ofuton/ai-ide:latest .
+docker build -t ofuton/ai-ide:$(cat VERSION) -t ofuton/ai-ide:latest .
 docker images
 docker push --all-tags ofuton/ai-ide
 ```

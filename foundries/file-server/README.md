@@ -35,7 +35,7 @@ PASSWORD=your_strong_password_here
 `Dockerfile` があるディレクトリ（`file-server/`）で、以下のコマンドを実行してDockerイメージをビルドします。`file-server` の部分は好きなイメージ名に変更できます。
 
 ```
-docker build -t file-server .
+docker build -t ofuton/file-server:$(cat VERSION) -t ofuton/file-server:latest .
 ```
 
 #### 3. コンテナの起動
@@ -43,15 +43,16 @@ docker build -t file-server .
 ビルドしたイメージを使ってコンテナを起動します。`--env-file` オプションで先ほど作成した`.env`ファイルを読み込ませます。
 
 ```
-docker run -d \
+docker run --rm \
   --env-file ./.env \
   -p 80:80 \
   -p 8080:8080 \
   -v "/mnt/d/workspace/:/workspace" \
   --name file-server \
-  file-server
+  ofuton/file-server:$(cat VERSION)
 ```
 
+- `--rm`: コンテナが停止したときに自動的に削除します。
 - `--env-file ./.env`: `.env`ファイルから環境変数（`PASSWORD`）を読み込みます。
 - `-p 80:80`: ホストのポート`80`をコンテナの`nginx`ポート`80`に接続します。
 - `-p 8080:8080`: ホストのポート`8080`をコンテナの`code-server`ポート`8080`に接続します。
@@ -66,12 +67,3 @@ docker run -d \
 - **公開用 (ファイルの閲覧)**
   - ブラウザで `http://localhost:80` を開きます。
 
-### コンテナの停止と削除
-
-```
-# 停止
-docker stop file-server
-
-# 削除
-docker rm file-server
-```
