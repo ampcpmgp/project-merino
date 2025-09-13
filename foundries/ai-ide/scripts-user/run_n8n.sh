@@ -10,15 +10,6 @@ export CUSTOM_N8N_BACKUP_DIR="$HOME/n8n_backup"
 # https://docs.n8n.io/hosting/configuration/configuration-examples/user-folder/
 export N8N_USER_FOLDER="$HOME/n8n_data"
 
-# リトライ設定を強化
-aws configure set default.retry_mode adaptive
-aws configure set default.max_attempts 10
-aws configure set default.cli_read_timeout 300
-aws configure set default.cli_connect_timeout 300
-aws configure set default.s3.multipart_chunksize 5MB # デフォルトは8MB
-aws configure set default.s3.max_concurrent_requests 20
-aws configure set default.s3.signature_version s3v4
-
 cd $HOME
 
 # 永続ストレージに CUSTOM_N8N_TAR_FILE が存在する場合はダウンロードと展開を行う
@@ -49,7 +40,8 @@ export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
 export GENERIC_TIMEZONE=Asia/Tokyo
 
 echo "ℹ️ n8n を起動中..."
-n8n start
+n8n start &
+
+"$(dirname $0)/wait-for-port.sh" "${N8N_PORT}"
 
 echo "✅ Port ${N8N_PORT} で n8n が起動しました"
-
