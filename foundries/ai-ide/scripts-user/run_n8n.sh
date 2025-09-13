@@ -41,4 +41,4 @@ export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
 export GENERIC_TIMEZONE=Asia/Tokyo
 
 echo "ℹ️ n8n を起動中..."
-n8n start
+exec n8n start
