@@ -18,15 +18,17 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 COPY VERSION /
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY config/nginx.conf /etc/nginx/sites-available/default
+COPY entrypoint.sh /entrypoint.sh
 
 # 必要なディレクトリを作成し、パーミッションを設定
 # /workspace ディレクトリは docker run 時にボリュームマウントされることを想定
 RUN mkdir -p /workspace/public \
     /var/log/supervisor \
-    /var/run/code-server
+    /var/run/code-server \
+    && chmod +x /entrypoint.sh
 
 # Nginx と code-server のポートを開放
 EXPOSE 80 8080
 
-# supervisorを起動するコマンド
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
