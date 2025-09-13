@@ -75,3 +75,15 @@ EXPOSE 8100
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
+
+# Install nginx and supervisor
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    nginx \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy configuration files
+COPY config/nginx.conf /etc/nginx/nginx.conf
+COPY config/supervisord.conf /etc/supervisord.conf
+
