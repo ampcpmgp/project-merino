@@ -67,3 +67,11 @@ docker run --rm \
 - **公開用 (ファイルの閲覧)**
   - ブラウザで `http://localhost:80` を開きます。
 
+#### 5. Docker の publish
+
+Docker Hub にイメージを公開する場合は、以下のコマンドを実行します。
+
+```bash
+docker images
+docker push --all-tags ofuton/file-server
+```
