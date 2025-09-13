@@ -1,8 +1,8 @@
 # キャラクター
 
-- [もこもこメリノ](./もこもこメリノ/README.md)
-- [琥珀](./琥珀/README.md)
-- [オニキス](./オニキス/README.md)
+- [もこもこメリノ](./merino/README.md)
+- [琥珀](./kohaku/README.md)
+- [オニキス](./onyx/README.md)
 
 ## リンク
 
