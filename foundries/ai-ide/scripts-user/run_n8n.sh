@@ -42,6 +42,8 @@ export NODE_FUNCTION_ALLOW_EXTERNAL="minimist,chai,cross-fetch,@fal-ai/client"
 export GENERIC_TIMEZONE=Asia/Tokyo
 # https://docs.n8n.io/hosting/configuration/environment-variables/database/#sqlite
 export DB_SQLITE_POOL_SIZE=10
+# https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/#n8n-instance-environment-variables
+export N8N_RUNNERS_TASK_TIMEOUT=600
 
 echo "ℹ️ n8n を起動中..."
 exec n8n start
