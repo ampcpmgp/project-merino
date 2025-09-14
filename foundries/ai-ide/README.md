@@ -36,6 +36,11 @@ cd foundries/ai-ide
 docker build -t ofuton/ai-ide:$(cat VERSION) -t ofuton/ai-ide:latest .
 ```
 
+単一コマンド
+```bash
+docker build -t ofuton/ai-ide:$(cat VERSION) -t ofuton/ai-ide:latest . && docker run -it --rm --env-file .env --name ai-ide -v "/mnt/d/workspace/:/workspace" ofuton/ai-ide:latest
+```
+
 ### Start
 
 D ドライブに `/workspace/public` フォルダを作成します。このパスは公開ディレクトリになります。

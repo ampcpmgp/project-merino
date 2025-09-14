@@ -37,7 +37,7 @@ export N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 export N8N_BLOCK_ENV_ACCESS_IN_NODE=false
 # https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/
 export NODE_FUNCTION_ALLOW_BUILTIN=*
-export NODE_FUNCTION_ALLOW_EXTERNAL=minimist,chai
+export NODE_FUNCTION_ALLOW_EXTERNAL="minimist,chai,cross-fetch,@fal-ai/client"
 # https://docs.n8n.io/hosting/configuration/configuration-examples/time-zone/
 export GENERIC_TIMEZONE=Asia/Tokyo
 # https://docs.n8n.io/hosting/configuration/environment-variables/database/#sqlite

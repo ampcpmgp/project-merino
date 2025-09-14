@@ -67,7 +67,9 @@ RUN bun add -g \
     opencode-ai@0.6.5 \
     @charmland/crush@0.7.6 \
     minimist@1.2.8 \
-    chai@6.0.1
+    chai@6.0.1 \
+    cross-fetch@4.1.0 \
+    @fal-ai/client@1.6.2
 
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
