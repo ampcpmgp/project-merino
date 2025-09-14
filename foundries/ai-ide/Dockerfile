@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
     gnupg \
     supervisor \
-    nginx \
+    nginx-extras \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # code-serverのインストール
