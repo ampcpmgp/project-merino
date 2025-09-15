@@ -15,7 +15,7 @@
 
 ## ライセンス
 
-キャラクターに関するライセンスは [LICENSE.md](./LICENSE.md) を参照してください。
+キャラクターに関するライセンスは [LICENSE.md](./characters/LICENSE.md) を参照してください。
 
 キャラクター作成ガイドラインは [GUIDELINE.md](./GUIDELINE.md) を参照してください。
 
