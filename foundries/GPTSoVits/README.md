@@ -23,6 +23,12 @@ docker run -it --rm --gpus all --name gpt-sovits \
   ofuton/gpt-sovits:latest
 ```
 
+## Docker exec
+
+```shell
+docker exec -it gpt-sovits /bin/bash
+```
+
 ## Docker Hub Deploy
 
 ```shell
