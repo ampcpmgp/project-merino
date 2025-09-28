@@ -54,6 +54,7 @@ docker run -it --rm --env-file .env --name ai-ide -v "/mnt/d/workspace/:/workspa
 ```bash
 docker exec -it ai-ide /bin/bash
 ```
+
 ### Deploy
 
 ```bash
