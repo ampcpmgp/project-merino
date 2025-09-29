@@ -1,6 +1,14 @@
 # GPTSoVits
 
-## Docker Build
+## Runpod (GPU 版)
+
+https://console.runpod.io/deploy?template=a62pjyqd0y&ref=1c1r2p2a
+
+source code: runpod_start_command.sh
+
+## Docker (CPU 版)
+
+### Docker Build
 
 <https://github.com/RVC-Boss/GPT-SoVITS/blob/main/docs/ja/README.md>
 
@@ -10,7 +18,7 @@ cd foundries/GPTSoVits
 docker build -t ofuton/gpt-sovits:$(cat VERSION) -t ofuton/gpt-sovits:latest .
 ```
 
-## Docker Run
+### Docker Run
 
 ```shell
 docker run -it --rm --gpus all --name gpt-sovits \
@@ -23,13 +31,13 @@ docker run -it --rm --gpus all --name gpt-sovits \
   ofuton/gpt-sovits:latest
 ```
 
-## Docker exec
+### Docker exec
 
 ```shell
 docker exec -it gpt-sovits /bin/bash
 ```
 
-## Docker Hub Deploy
+### Docker Hub Deploy
 
 ```shell
 docker push ofuton/gpt-sovits:latest
