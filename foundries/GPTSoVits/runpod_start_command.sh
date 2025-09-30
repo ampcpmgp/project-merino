@@ -20,7 +20,6 @@ if [ -f "$ARCHIVE_PATH" ]; then
 else
   echo "🔵 Archive not found. Setting up from scratch..."
 
-  apt-get update
   apt-get install -y git wget git-lfs lsof
 
   cd /root
