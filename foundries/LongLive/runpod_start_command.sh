@@ -32,6 +32,7 @@ else
   conda install nvidia/label/cuda-12.4.1::cuda -y
   conda install -c nvidia/label/cuda-12.4.1 cudatoolkit -y
   pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu124
+  pip install -U "huggingface_hub[cli]"
   pip install -r requirements.txt
   pip install flash-attn==2.7.4.post1 --no-build-isolation
   
