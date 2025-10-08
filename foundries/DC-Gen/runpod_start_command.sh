@@ -27,11 +27,8 @@ else
   cd "$INSTALL_DIR"
   
   conda create -n "$CONDA_ENV_NAME" python=3.10 -y
-  
   conda run -n "$CONDA_ENV_NAME" pip install -U -r requirements.txt
-  
   echo "✅ Setup complete. Creating archive for future launches..."
-  
   tar -I pigz -cf "$ARCHIVE_PATH" -C /root DC-Gen -C /opt/conda/envs "$CONDA_ENV_NAME"
 
   echo "✅ Archive created at $ARCHIVE_PATH."
