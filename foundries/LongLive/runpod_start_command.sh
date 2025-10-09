@@ -14,7 +14,7 @@ apt-get install -y pigz tar build-essential
 if [ -f "$ARCHIVE_PATH" ]; then
   echo "✅ Archive found at $ARCHIVE_PATH. Extracting app and conda environment..."
 
-  tar -I pigz -xvf "$ARCHIVE_PATH" -C /
+  tar -I pigz -xvf "$ARCHIVE_PATH" -C /root
 
   echo "✅ Extraction complete. Starting application..."
 else
@@ -34,9 +34,13 @@ else
   conda run -n "$CONDA_ENV_NAME" pip install -U "huggingface_hub[cli]"
   conda run -n "$CONDA_ENV_NAME" pip install -r requirements.txt
   conda run -n "$CONDA_ENV_NAME" pip install flash-attn==2.7.4.post1 --no-build-isolation
+
+  # https://github.com/NVlabs/LongLive/issues/7
+  conda run -n "$CONDA_ENV_NAME" pip uninstall -y transformers peft
+  conda run -n "$CONDA_ENV_NAME" pip install "transformers==4.35.2" "peft==0.8.2" accelerate safetensors
   
-  conda run -n "$CONDA_ENV_NAME" huggingface-cli download Wan-AI/Wan2.1-T2V-1.3B --local-dir wan_models/Wan2.1-T2V-1.3B
-  conda run -n "$CONDA_ENV_NAME" huggingface-cli download Efficient-Large-Model/LongLive --local-dir longlive_models
+  conda run -n "$CONDA_ENV_NAME" hf download Wan-AI/Wan2.1-T2V-1.3B --local-dir wan_models/Wan2.1-T2V-1.3B
+  conda run -n "$CONDA_ENV_NAME" hf download Efficient-Large-Model/LongLive --local-dir longlive_models
 
   echo "✅ Setup complete. Creating archive for future launches..."
   
