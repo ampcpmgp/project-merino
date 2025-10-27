@@ -36,17 +36,19 @@ cd foundries/ai-ide
 docker build -t ofuton/ai-ide:$(cat VERSION) -t ofuton/ai-ide:latest .
 ```
 
-単一コマンド
-```bash
-docker build -t ofuton/ai-ide:$(cat VERSION) -t ofuton/ai-ide:latest . && docker run -it --rm --env-file .env --name ai-ide -v "/mnt/d/workspace/:/workspace" ofuton/ai-ide:latest
-```
-
 ### Start
 
-D ドライブに `/workspace/public` フォルダを作成します。このパスは公開ディレクトリになります。
+E ドライブ等に `/workspace/public` フォルダを作成します。このパスは公開ディレクトリになります。
+
+WSL に自動認識されない場合、以下コマンドでマウントします。
 
 ```bash
-docker run -it --rm --env-file .env --name ai-ide -v "/mnt/d/workspace/:/workspace" ofuton/ai-ide:latest
+sudo mkdir /mnt/e
+sudo mount -t drvfs E: /mnt/e
+```
+
+```bash
+docker run -it --rm --env-file .env --name ai-ide -v "/mnt/e/workspace/:/workspace" ofuton/ai-ide:latest
 ```
 
 実行中に shell に入りたい場合は、以下コマンドを入力する
