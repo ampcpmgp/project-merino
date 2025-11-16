@@ -32,6 +32,7 @@ export N8N_EDITOR_BASE_URL="${N8N_URL}"
 export N8N_PUSH_BACKEND=websocket
 # https://docs.n8n.io/hosting/configuration/environment-variables/endpoints/
 export WEBHOOK_URL="${N8N_URL}"
+export N8N_PAYLOAD_SIZE_MAX=256
 # https://docs.n8n.io/hosting/configuration/environment-variables/security/
 export N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 export N8N_BLOCK_ENV_ACCESS_IN_NODE=false
