@@ -48,6 +48,7 @@ sudo mount -t drvfs E: /mnt/e
 ```
 
 ```bash
+cd foundries/ai-ide
 docker run -it --rm --env-file .env --name ai-ide -v "/mnt/e/workspace/:/workspace" ofuton/ai-ide:latest
 ```
 
