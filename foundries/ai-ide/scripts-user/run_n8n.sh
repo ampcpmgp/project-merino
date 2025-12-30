@@ -36,6 +36,7 @@ export N8N_PAYLOAD_SIZE_MAX=256
 # https://docs.n8n.io/hosting/configuration/environment-variables/security/
 export N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 export N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+export N8N_RESTRICT_FILE_ACCESS_TO=""
 # https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/
 export NODE_FUNCTION_ALLOW_BUILTIN=*
 export NODE_FUNCTION_ALLOW_EXTERNAL="minimist,chai,cross-fetch,@fal-ai/client"
@@ -45,6 +46,11 @@ export GENERIC_TIMEZONE=Asia/Tokyo
 export DB_SQLITE_POOL_SIZE=10
 # https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/#n8n-instance-environment-variables
 export N8N_RUNNERS_TASK_TIMEOUT=600
+# https://docs.n8n.io/embed/configuration/#environment-variables
+export NODES_EXCLUDE=[]
+
+# refs:
+# https://community.n8n.io/t/problem-with-read-write-node-after-update/241733/2
 
 echo "ℹ️ n8n を起動中..."
 exec n8n start
