@@ -61,7 +61,7 @@ ENV BUN_INSTALL="/home/appuser/.bun"
 ENV PATH="$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:$PATH"
 
 RUN bun add -g \
-    n8n@1.123.8 \
+    n8n@2.1.4 \
     @anthropic-ai/claude-code@2.0.76 \
     ccusage@17.2.0 \
     opencode-ai@1.0.209 \
