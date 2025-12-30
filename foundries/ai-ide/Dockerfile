@@ -61,14 +61,14 @@ ENV BUN_INSTALL="/home/appuser/.bun"
 ENV PATH="$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:$PATH"
 
 RUN bun add -g \
-    n8n@1.119.2 \
-    @anthropic-ai/claude-code@2.0.42 \
-    ccusage@17.1.5 \
-    opencode-ai@1.0.65 \
+    n8n@1.123.8 \
+    @anthropic-ai/claude-code@2.0.76 \
+    ccusage@17.2.0 \
+    opencode-ai@1.0.209 \
     minimist@1.2.8 \
-    chai@6.2.1 \
+    chai@6.2.2 \
     cross-fetch@4.1.0 \
-    @fal-ai/client@1.7.2
+    @fal-ai/client@1.8.1
 
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
