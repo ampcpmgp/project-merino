@@ -45,7 +45,7 @@ export GENERIC_TIMEZONE=Asia/Tokyo
 # https://docs.n8n.io/hosting/configuration/environment-variables/database/#sqlite
 export DB_SQLITE_POOL_SIZE=10
 # https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/#n8n-instance-environment-variables
-export N8N_RUNNERS_TASK_TIMEOUT=600
+export N8N_RUNNERS_TASK_TIMEOUT=3000
 # https://docs.n8n.io/embed/configuration/#environment-variables
 export NODES_EXCLUDE=[]
 
