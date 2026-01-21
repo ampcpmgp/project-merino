@@ -69,9 +69,7 @@ RUN bun add -g \
     minimist@1.2.8 \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
-    @fal-ai/client@1.8.1 \
-    sharp@0.34.5
-
+    @fal-ai/client@1.8.1
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
 RUN mkdir -p /home/appuser/.local/share/code-server/User
