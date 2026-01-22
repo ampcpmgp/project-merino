@@ -27,7 +27,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     nginx-extras \
     graphicsmagick \
+    ### Chromeの動作に必要なLinux共有ライブラリをインストール ここから ###
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2t64 \
+    libxshmfence1 \
+    libglu1-mesa \
+    fonts-ipafont-gothic \
+    fonts-freefont-ttf \
+    fonts-noto-color-emoji \
+    fontconfig \
+    ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# フォントキャッシュを更新（念のため追加）
+RUN fc-cache -fv
 
 # code-serverのインストール
 RUN curl -fsSL https://code-server.dev/install.sh | sh
@@ -61,6 +87,9 @@ RUN bash -c '. /home/appuser/.bashrc && \
 ENV BUN_INSTALL="/home/appuser/.bun"
 ENV PATH="$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:$PATH"
 
+# Puppeteerのキャッシュディレクトリを固定
+ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
+
 RUN bun add -g \
     n8n@2.1.4 \
     @anthropic-ai/claude-code@2.0.76 \
@@ -69,7 +98,11 @@ RUN bun add -g \
     minimist@1.2.8 \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
-    @fal-ai/client@1.8.1
+    @fal-ai/client@1.8.1 \
+    puppeteer@24.35.0
+
+RUN bunx puppeteer browsers install chrome
+
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
 RUN mkdir -p /home/appuser/.local/share/code-server/User
