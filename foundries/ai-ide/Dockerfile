@@ -91,7 +91,7 @@ ENV PATH="$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:$P
 ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
 
 RUN bun add -g \
-    n8n@2.1.4 \
+    n8n@2.4.4 \
     @anthropic-ai/claude-code@2.0.76 \
     ccusage@17.2.0 \
     opencode-ai@1.0.209 \
