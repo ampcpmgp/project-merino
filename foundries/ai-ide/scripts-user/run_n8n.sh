@@ -49,6 +49,8 @@ export DB_SQLITE_POOL_SIZE=10
 export N8N_RUNNERS_TASK_TIMEOUT=3000
 # https://docs.n8n.io/embed/configuration/#environment-variables
 export NODES_EXCLUDE=[]
+# https://docs.n8n.io/hosting/configuration/environment-variables/binary-data/
+export N8N_DEFAULT_BINARY_DATA_MODE=filesystem
 
 # refs:
 # https://community.n8n.io/t/problem-with-read-write-node-after-update/241733/2
