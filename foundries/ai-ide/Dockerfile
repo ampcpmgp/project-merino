@@ -91,15 +91,15 @@ ENV PATH="$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:$P
 ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
 
 RUN bun add -g \
-    n8n@2.4.4 \
-    @anthropic-ai/claude-code@2.0.76 \
-    ccusage@17.2.0 \
-    opencode-ai@1.0.209 \
+    n8n@2.4.6 \
+    @anthropic-ai/claude-code@2.1.19 \
+    ccusage@18.0.5 \
+    opencode-ai@1.1.36 \
     minimist@1.2.8 \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
-    @fal-ai/client@1.8.1 \
-    puppeteer@24.35.0
+    @fal-ai/client@1.8.4 \
+    puppeteer@24.36.0
 
 RUN bunx puppeteer browsers install chrome
 
