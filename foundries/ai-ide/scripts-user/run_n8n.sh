@@ -32,6 +32,7 @@ export NODE_OPTIONS=--max-old-space-size=16384
 export N8N_PORT=8100
 export N8N_EDITOR_BASE_URL="${N8N_URL}"
 export N8N_PUSH_BACKEND=websocket
+export N8N_DIAGNOSTICS_ENABLED=false
 # https://docs.n8n.io/hosting/configuration/environment-variables/endpoints/
 export WEBHOOK_URL="${N8N_URL}"
 export N8N_PAYLOAD_SIZE_MAX=256
