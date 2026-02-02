@@ -6,21 +6,35 @@ set -euo pipefail
 export CUSTOM_N8N_TAR_FILE="n8n.tar.gz"
 export CUSTOM_N8N_TAR_FILE_PATH="$HOME/$CUSTOM_N8N_TAR_FILE"
 export CUSTOM_N8N_BACKUP_DIR="$HOME/n8n_backup"
+export CUSTOM_N8N_WORKSPACE_CACHE_FILE="/workspace/n8n_data/n8n.tar.gz"
 
 # https://docs.n8n.io/hosting/configuration/configuration-examples/user-folder/
 export N8N_USER_FOLDER="$HOME/n8n_data"
 
 cd $HOME
 
-# 永続ストレージに CUSTOM_N8N_TAR_FILE が存在する場合はダウンロードと展開を行う
-if aws s3api head-object --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$AWS_BUCKET_NAME" --key "$CUSTOM_N8N_TAR_FILE" > /dev/null 2>&1; then
+# ------------------------------------------------------------------
+# バックアップ復元ロジック
+# 優先順位:
+# 1. /workspace/n8n_data/n8n.tar.gz (ローカルキャッシュ)
+# 2. S3 (クラウドバックアップ)
+# ------------------------------------------------------------------
+
+# 1. ローカルキャッシュが存在する場合
+if [ -f "$CUSTOM_N8N_WORKSPACE_CACHE_FILE" ]; then
+  echo "ℹ️ ローカルキャッシュファイル $CUSTOM_N8N_WORKSPACE_CACHE_FILE が見つかりました。展開を開始します。"
+  
+  tar --use-compress-program="pigz" -xf "$CUSTOM_N8N_WORKSPACE_CACHE_FILE" -C "$HOME"
+  echo "✅ ローカルキャッシュからの展開が完了しました"
+# 2. S3にバックアップが存在する場合
+elif aws s3api head-object --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" --bucket "$AWS_BUCKET_NAME" --key "$CUSTOM_N8N_TAR_FILE" > /dev/null 2>&1; then
   echo "ℹ️ ファイル s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE が見つかりました。ダウンロードと展開を開始します。"
 
   aws s3 cp --region "$AWS_DEFAULT_REGION" --endpoint-url "$AWS_ENDPOINT_URL" "s3://$AWS_BUCKET_NAME/$CUSTOM_N8N_TAR_FILE" "$CUSTOM_N8N_TAR_FILE_PATH"
   tar --use-compress-program="pigz" -xf "$CUSTOM_N8N_TAR_FILE_PATH" -C "$HOME"
   echo "✅ 展開が完了しました"
+# 3. ファイルが存在しない場合の処理
 else
-  # ファイルが存在しない場合の処理
   echo "ℹ️ S3にバックアップが存在しません。初期状態で起動します。"
 fi
 
@@ -53,6 +67,8 @@ export N8N_RUNNERS_TASK_TIMEOUT=3000
 export NODES_EXCLUDE=[]
 # https://docs.n8n.io/hosting/configuration/environment-variables/binary-data/
 export N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+# https://docs.n8n.io/hosting/configuration/environment-variables/executions/
+export EXECUTIONS_DATA_PRUNE_MAX_COUNT=5000
 
 # refs:
 # https://community.n8n.io/t/problem-with-read-write-node-after-update/241733/2
