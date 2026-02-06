@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     nginx-extras \
     graphicsmagick \
+    rsync \
+    pv \
     ### Chromeの動作に必要なLinux共有ライブラリをインストール ここから ###
     libnss3 \
     libatk1.0-0 \
