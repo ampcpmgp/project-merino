@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merino Memo - Test Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Override for testing without chrome extension API */
+        body {
+            width: 100%;
+            min-height: 100vh;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .test-container {
+            width: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div id="popup-container" class="popup-container">
+            <div class="header">
+                <h1>メモ (Test Mode)</h1>
+                <div class="header-buttons">
+                    <button id="settings-btn" class="icon-btn" title="設定">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M17.43,10.98c0.04-0.32,0.07-0.64,0.07-0.98s-0.03-0.66-0.07-0.98l2.11-1.65c0.19-0.15,0.24-0.42,0.12-0.64l-2-3.46c-0.12-0.22-0.39-0.3-0.61-0.22l-2.49,1c-0.52-0.4-1.08-0.73-1.69-0.98l-0.38-2.65C12.46,0.18,12.25,0,12,0h-4c-0.25,0-0.46,0.18-0.49,0.42L7.13,3.07c-0.61,0.25-1.17,0.59-1.69,0.98l-2.49-1c-0.23-0.09-0.49,0-0.61,0.22l-2,3.46c-0.13,0.22-0.07,0.49,0.12,0.64l2.11,1.65c-0.04,0.32-0.07,0.65-0.07,0.98s0.03,0.66,0.07,0.98l-2.11,1.65c-0.19,0.15-0.24,0.42-0.12,0.64l2,3.46c0.12,0.22,0.39,0.3,0.61,0.22l2.49-1c0.52,0.4,1.08,0.73,1.69,0.98l0.38,2.65C7.54,19.82,7.75,20,8,20h4c0.25,0,0.46-0.18,0.49-0.42l0.38-2.65c0.61-0.25,1.17-0.59,1.69-0.98l2.49,1c0.23,0.09,0.49,0,0.61-0.22l2-3.46c0.12-0.22,0.07-0.49-0.12-0.64L17.43,10.98z M10,13c-1.65,0-3-1.35-3-3s1.35-3,3-3s3,1.35,3,3S11.65,13,10,13z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="content">
+                <textarea id="memo-text" placeholder="メモを入力してください...&#10;&#10;テスト手順：&#10;1. 設定ボタン(⚙️)をクリック&#10;2. 設定ダイアログで「変数設定」ボタンをクリック&#10;3. ESCキーを2回押す&#10;4. 変数設定→設定ダイアログの順に閉じることを確認"></textarea>
+                
+                <div class="button-row">
+                    <button id="save-btn" class="btn btn-primary">保存</button>
+                    <button id="clear-btn" class="btn btn-secondary">クリア</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 設定ダイアログ -->
+        <div id="settings-dialog" class="dialog-overlay" style="display: none;">
+            <div class="dialog">
+                <div class="dialog-header">
+                    <h2>設定</h2>
+                    <button class="close-btn" data-dialog="settings-dialog">&times;</button>
+                </div>
+                <div class="dialog-content">
+                    <div class="setting-item">
+                        <label for="font-size">フォントサイズ:</label>
+                        <select id="font-size">
+                            <option value="small">小</option>
+                            <option value="medium" selected>中</option>
+                            <option value="large">大</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="auto-save">
+                            自動保存 (Test: LocalStorage使用)
+                        </label>
+                    </div>
+                    
+                    <div class="button-row">
+                        <button id="variables-btn" class="btn btn-primary">変数設定</button>
+                        <button id="close-settings-btn" class="btn btn-secondary">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 変数設定ダイアログ -->
+        <div id="variables-dialog" class="dialog-overlay" style="display: none;">
+            <div class="dialog">
+                <div class="dialog-header">
+                    <h2>変数設定</h2>
+                    <button class="close-btn" data-dialog="variables-dialog">&times;</button>
+                </div>
+                <div class="dialog-content">
+                    <p style="color: #666; margin-bottom: 12px; font-size: 13px;">
+                        ESCキーテスト：このダイアログでESCキーを押すと、このダイアログのみが閉じ、設定ダイアログは開いたままになります。
+                    </p>
+                    <div class="variables-list" id="variables-list">
+                        <!-- 変数リストがここに動的に追加されます -->
+                    </div>
+                    
+                    <div class="button-row">
+                        <button id="add-variable-btn" class="btn btn-primary">変数追加</button>
+                        <button id="close-variables-btn" class="btn btn-secondary">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="memo-test.js"></script>
+</body>
+</html>
