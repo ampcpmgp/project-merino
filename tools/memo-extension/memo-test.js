@@ -250,27 +250,52 @@ class MemoApp {
         container.innerHTML = '';
 
         if (AppState.memoData.variables.length === 0) {
-            container.innerHTML = '<p style="color: #999;">変数がありません</p>';
+            const emptyMsg = document.createElement('p');
+            emptyMsg.style.color = '#999';
+            emptyMsg.textContent = '変数がありません';
+            container.appendChild(emptyMsg);
             return;
         }
 
         AppState.memoData.variables.forEach((variable, index) => {
             const item = document.createElement('div');
             item.className = 'variable-item';
-            item.innerHTML = `
-                <input type="text" placeholder="変数名" value="${variable.name || ''}" data-index="${index}" data-field="name">
-                <input type="text" placeholder="値" value="${variable.value || ''}" data-index="${index}" data-field="value">
-                <button onclick="app.removeVariable(${index})">削除</button>
-            `;
-            container.appendChild(item);
-        });
-
-        container.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', (e) => {
-                const index = parseInt(e.target.dataset.index);
-                const field = e.target.dataset.field;
-                AppState.memoData.variables[index][field] = e.target.value;
+            
+            // 変数名入力
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = '変数名';
+            nameInput.value = variable.name || '';
+            nameInput.dataset.index = index;
+            nameInput.dataset.field = 'name';
+            nameInput.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                AppState.memoData.variables[idx].name = e.target.value;
             });
+            
+            // 値入力
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.placeholder = '値';
+            valueInput.value = variable.value || '';
+            valueInput.dataset.index = index;
+            valueInput.dataset.field = 'value';
+            valueInput.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                AppState.memoData.variables[idx].value = e.target.value;
+            });
+            
+            // 削除ボタン
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '削除';
+            deleteBtn.addEventListener('click', () => {
+                this.removeVariable(index);
+            });
+            
+            item.appendChild(nameInput);
+            item.appendChild(valueInput);
+            item.appendChild(deleteBtn);
+            container.appendChild(item);
         });
     }
 
