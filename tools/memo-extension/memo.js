@@ -294,7 +294,7 @@ class MemoApp {
 
     renderVariables() {
         const container = document.getElementById('variables-list');
-        container.innerHTML = '';
+        container.replaceChildren();
 
         if (AppState.memoData.variables.length === 0) {
             const emptyMsg = document.createElement('p');
