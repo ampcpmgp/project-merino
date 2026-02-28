@@ -101,7 +101,8 @@ RUN bun add -g \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
     @fal-ai/client@1.8.4 \
-    puppeteer@24.36.0
+    puppeteer@24.36.0 \
+    js-yaml@4.1.1
 
 # chrome は n8n-puppeteer-node のバージョンに合わせる
 RUN bunx puppeteer browsers install chrome@143.0.7499.192
