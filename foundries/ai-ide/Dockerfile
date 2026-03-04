@@ -124,7 +124,7 @@ COPY config/nginx.conf /etc/nginx/sites-available/default
 
 # Convert all .sh files to unix format to avoid CRLF issues
 RUN find . -type f -name "*.sh" -exec dos2unix {} \;
-RUN chmod +x /home/appuser/app/entrypoint.sh
+RUN find . -type f -name "*.sh" -exec chmod +x {} \;
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
