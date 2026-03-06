@@ -101,11 +101,11 @@ RUN bun add -g \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
     @fal-ai/client@1.9.4 \
-    puppeteer@24.37.5 \
     js-yaml@4.1.1
 
 # chrome は n8n-puppeteer-node のバージョンに合わせる
-RUN bunx puppeteer browsers install chrome@145.0.7632.77
+RUN bun add -g puppeteer@24.36.0
+RUN bunx puppeteer browsers install chrome@143.0.7499.192
 
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
