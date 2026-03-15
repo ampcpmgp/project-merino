@@ -26,6 +26,53 @@
 - AWS_ENDPOINT_URL
 - AWS_BUCKET_NAME
 
+## 短縮URL機能
+
+nginx の Lua モジュールを使って、nginx の再起動なしに短縮URLをダイナミックに管理できます。
+
+短縮URLは `/s/<キー>` のパスでアクセスでき、設定ファイル `/workspace/url-shortcuts.txt` に基づいてリダイレクトされます。
+
+### 管理スクリプト
+
+コンテナ内で以下のスクリプトを使用します。
+
+```bash
+/home/appuser/app/scripts-user/url-shortener.sh <コマンド> [引数]
+```
+
+**短縮URLを追加または更新する:**
+
+```bash
+/home/appuser/app/scripts-user/url-shortener.sh add gh https://github.com
+# ✅ 短縮URLを追加しました: /s/gh -> https://github.com
+```
+
+**短縮URLの一覧を表示する:**
+
+```bash
+/home/appuser/app/scripts-user/url-shortener.sh list
+# 📋 短縮URLの一覧:
+#   /s/gh -> https://github.com
+```
+
+**短縮URLを削除する:**
+
+```bash
+/home/appuser/app/scripts-user/url-shortener.sh remove gh
+# ✅ 短縮URLを削除しました: /s/gh
+```
+
+### 設定ファイル
+
+`/workspace/url-shortcuts.txt` を直接編集することもできます。nginx の再起動は不要です。
+
+```
+# 短縮URL設定ファイル
+# 形式: <キー> <URL>
+gh	https://github.com
+docs	https://docs.example.com/path/to/long/url
+```
+
 ## Docker
 
 ### build
