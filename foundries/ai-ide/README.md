@@ -30,7 +30,7 @@
 
 nginx の Lua モジュールを使って、nginx の再起動なしに短縮URLをダイナミックに管理できます。
 
-短縮URLは `/s/<キー>` のパスでアクセスでき、設定ファイル `/workspace/url-shortcuts.txt` に基づいてリダイレクトされます。
+短縮URLは `/s/<キー>` のパスでアクセスでき、`/workspace/url-shortcuts/<キー>` ファイルに記載されたURLへリダイレクトされます。
 
 ### 管理スクリプト
 
@@ -44,7 +44,7 @@ nginx の Lua モジュールを使って、nginx の再起動なしに短縮URL
 
 ```bash
 /home/appuser/app/scripts-user/url-shortener.sh add gh https://github.com
-# ✅ 短縮URLを追加しました: /s/gh -> https://github.com
+# ✅ 短縮URLを登録しました: /s/gh -> https://github.com
 ```
 
 **短縮URLの一覧を表示する:**
@@ -64,13 +64,11 @@ nginx の Lua モジュールを使って、nginx の再起動なしに短縮URL
 
 ### 設定ファイル
 
-`/workspace/url-shortcuts.txt` を直接編集することもできます。nginx の再起動は不要です。
+`/workspace/url-shortcuts/` ディレクトリ配下に、キー名のファイルを作成しURLを書き込むことでも直接管理できます。nginx の再起動は不要です。
 
-```
-# 短縮URL設定ファイル
-# 形式: <キー> <URL>
-gh	https://github.com
-docs	https://docs.example.com/path/to/long/url
+```bash
+# 例: /s/gh -> https://github.com を直接作成
+echo "https://github.com" > /workspace/url-shortcuts/gh
 ```
 
 ## Docker

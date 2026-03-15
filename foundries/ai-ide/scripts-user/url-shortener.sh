@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-SHORTCUTS_FILE="/workspace/url-shortcuts.txt"
+SHORTCUTS_DIR="/workspace/url-shortcuts"
+mkdir -p "$SHORTCUTS_DIR"
 
 usage() {
     echo "使い方: $0 <コマンド> [引数]"
@@ -19,53 +20,37 @@ usage() {
     exit 1
 }
 
-# 設定ファイルが存在しない場合は初期化する
-if [ ! -f "$SHORTCUTS_FILE" ]; then
-    echo "# 短縮URL設定ファイル" > "$SHORTCUTS_FILE"
-    echo "# 形式: <キー> <URL>" >> "$SHORTCUTS_FILE"
-    echo "# 例: gh https://github.com" >> "$SHORTCUTS_FILE"
-    echo "ℹ️ 設定ファイルを作成しました: $SHORTCUTS_FILE"
-fi
-
 case "${1:-}" in
     add)
         if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
             echo "❌ エラー: キーとURLが必要です"
             usage
         fi
-        KEY="$2"
-        URL="$3"
-        if grep -q "^${KEY}[[:space:]]" "$SHORTCUTS_FILE"; then
-            sed -i "/^${KEY}[[:space:]]/d" "$SHORTCUTS_FILE"
-            printf '%s\t%s\n' "$KEY" "$URL" >> "$SHORTCUTS_FILE"
-            echo "✅ 短縮URLを更新しました: /s/${KEY} -> ${URL}"
-        else
-            printf '%s\t%s\n' "$KEY" "$URL" >> "$SHORTCUTS_FILE"
-            echo "✅ 短縮URLを追加しました: /s/${KEY} -> ${URL}"
-        fi
+        echo "$3" > "$SHORTCUTS_DIR/$2"
+        echo "✅ 短縮URLを登録しました: /s/$2 -> $3"
         ;;
     remove)
         if [ -z "${2:-}" ]; then
             echo "❌ エラー: キーが必要です"
             usage
         fi
-        KEY="$2"
-        if grep -q "^${KEY}[[:space:]]" "$SHORTCUTS_FILE"; then
-            sed -i "/^${KEY}[[:space:]]/d" "$SHORTCUTS_FILE"
-            echo "✅ 短縮URLを削除しました: /s/${KEY}"
-        else
-            echo "❌ 短縮URLが見つかりません: /s/${KEY}"
+        if [ ! -f "$SHORTCUTS_DIR/$2" ]; then
+            echo "❌ 短縮URLが見つかりません: /s/$2"
             exit 1
         fi
+        rm "$SHORTCUTS_DIR/$2"
+        echo "✅ 短縮URLを削除しました: /s/$2"
         ;;
     list)
         echo "📋 短縮URLの一覧:"
-        if grep -v "^#" "$SHORTCUTS_FILE" | grep -v "^[[:space:]]*$" | grep -q .; then
-            grep -v "^#" "$SHORTCUTS_FILE" | grep -v "^[[:space:]]*$" | while IFS=$'\t' read -r key url; do
-                echo "  /s/${key} -> ${url}"
-            done
-        else
+        shopt -s nullglob
+        files=("$SHORTCUTS_DIR"/*)
+        if [ ${#files[@]} -eq 0 ]; then
             echo "  (登録なし)"
+        else
+            for f in "${files[@]}"; do
+                echo "  /s/$(basename "$f") -> $(cat "$f")"
+            done
         fi
         ;;
     *)
