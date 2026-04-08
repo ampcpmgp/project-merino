@@ -52,7 +52,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-color-emoji \
     fontconfig \
     libnginx-mod-http-lua \
-    ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
+    sqlite3 \
+  ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # フォントキャッシュを更新（念のため追加）
