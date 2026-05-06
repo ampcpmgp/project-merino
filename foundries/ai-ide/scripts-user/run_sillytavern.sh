@@ -9,7 +9,6 @@ export SILLYTAVERN_PORT=8000
 export SILLYTAVERN_WHITELISTMODE=false
 export SILLYTAVERN_BROWSERLAUNCH_ENABLED=false
 export SILLYTAVERN_HEARTBEATINTERVAL=30
-export SILLYTAVERN_DATAROOT=/home/appuser/app/sillytavern/data
 
 # In a Docker environment, SillyTavern requires either user accounts or securityOverride
 # when listening on non-localhost. We override by default since access is expected to be
