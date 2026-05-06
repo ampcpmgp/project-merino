@@ -10,5 +10,7 @@ CURRENT_DIR=$(cd $(dirname $0); pwd)
 
 "${CURRENT_DIR}/wait-for-port.sh" "8100"
 
+"${CURRENT_DIR}/wait-for-port.sh" "8000"
+
 echo "ℹ️ cloudflared を起動中..."
 exec cloudflared tunnel run --token "${CLOUDFLARED_TOKEN}"

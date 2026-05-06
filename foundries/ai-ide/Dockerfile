@@ -109,8 +109,15 @@ RUN bun add -g \
 RUN bun add -g puppeteer@24.36.0
 RUN bunx puppeteer browsers install chrome@143.0.7499.192
 
+# Install SillyTavern
+USER appuser
+RUN git clone --depth 1 -b release https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
+    && cd /home/appuser/app/SillyTavern \
+    && npm install
+
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
+USER root
 RUN mkdir -p /home/appuser/.local/share/code-server/User
 COPY config/settings.json /home/appuser/.local/share/code-server/User/settings.json
 
