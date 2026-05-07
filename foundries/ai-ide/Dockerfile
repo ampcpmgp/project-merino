@@ -118,8 +118,9 @@ RUN git clone --depth 1 -b 1.18.0 https://github.com/SillyTavern/SillyTavern.git
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
 USER root
-RUN mkdir -p /home/appuser/.local/share/code-server/User
-COPY config/settings.json /home/appuser/.local/share/code-server/User/settings.json
+RUN mkdir -p /home/appuser/.local/share/code-server/User && \
+    chown -R appuser:appuser /home/appuser/.local/share/code-server
+COPY --chown=appuser:appuser config/settings.json /home/appuser/.local/share/code-server/User/settings.json
 
 WORKDIR /home/appuser/app
 COPY . .
