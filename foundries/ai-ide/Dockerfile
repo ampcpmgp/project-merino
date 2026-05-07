@@ -111,7 +111,7 @@ RUN bunx puppeteer browsers install chrome@143.0.7499.192
 
 # Install SillyTavern
 USER appuser
-RUN git clone --depth 1 -b release https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
+RUN git clone --depth 1 -b 1.18.0 https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
     && cd /home/appuser/app/SillyTavern \
     && npm install
 
