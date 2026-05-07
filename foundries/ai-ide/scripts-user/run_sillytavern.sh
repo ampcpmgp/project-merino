@@ -3,12 +3,19 @@
 set -euo pipefail
 
 # SillyTavern configuration via environment variables
-# refs: https://docs.sillytavern.app/installation/docker/#environment-variables
+# refs: https://docs.sillytavern.app/administration/config-yaml/#network-configuration
 export SILLYTAVERN_LISTEN=true
 export SILLYTAVERN_PORT=8000
-export SILLYTAVERN_WHITELISTMODE=false
-export SILLYTAVERN_BROWSERLAUNCH_ENABLED=false
 export SILLYTAVERN_HEARTBEATINTERVAL=30
+
+# https://docs.sillytavern.app/administration/config-yaml/#security-configuration
+export SILLYTAVERN_WHITELISTMODE=false
+
+# https://docs.sillytavern.app/administration/config-yaml/#browser-launch-configuration
+export SILLYTAVERN_BROWSERLAUNCH_ENABLED=false
+
+# https://docs.sillytavern.app/administration/config-yaml/#user-authentication
+# export SILLYTAVERN_ENABLEUSERACCOUNTS=true
 
 # In a Docker environment, SillyTavern requires either user accounts or securityOverride
 # when listening on non-localhost. We override by default since access is expected to be
