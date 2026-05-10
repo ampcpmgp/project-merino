@@ -53,7 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fontconfig \
     libnginx-mod-http-lua \
     sqlite3 \
-  ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
+    ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # フォントキャッシュを更新（念のため追加）
@@ -103,7 +103,8 @@ RUN bun add -g \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
     @fal-ai/client@1.9.5 \
-    js-yaml@4.1.1
+    js-yaml@4.1.1 \
+    jsonrepair@3.14.0
 
 # chrome は n8n-puppeteer-node のバージョンに合わせる
 RUN bun add -g puppeteer@24.36.0
