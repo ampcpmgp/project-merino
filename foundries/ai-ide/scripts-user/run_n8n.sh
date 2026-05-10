@@ -23,7 +23,7 @@ cd $HOME
 # 1. ローカルキャッシュが存在する場合
 if [ -f "$CUSTOM_N8N_WORKSPACE_CACHE_FILE" ]; then
   echo "ℹ️ ローカルキャッシュファイル $CUSTOM_N8N_WORKSPACE_CACHE_FILE が見つかりました。展開を開始します。"
-  
+
   tar --use-compress-program="pigz" -xf "$CUSTOM_N8N_WORKSPACE_CACHE_FILE" -C "$HOME"
   echo "✅ ローカルキャッシュからの展開が完了しました"
 # 2. S3にバックアップが存在する場合
@@ -56,7 +56,7 @@ export N8N_BLOCK_ENV_ACCESS_IN_NODE=false
 export N8N_RESTRICT_FILE_ACCESS_TO=""
 # https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/
 export NODE_FUNCTION_ALLOW_BUILTIN=*
-export NODE_FUNCTION_ALLOW_EXTERNAL="minimist,chai,cross-fetch,@fal-ai/client,js-yaml"
+export NODE_FUNCTION_ALLOW_EXTERNAL="minimist,chai,cross-fetch,@fal-ai/client,js-yaml,jsonrepair"
 # https://docs.n8n.io/hosting/configuration/configuration-examples/time-zone/
 export GENERIC_TIMEZONE=Asia/Tokyo
 # https://docs.n8n.io/hosting/configuration/environment-variables/database/#sqlite
