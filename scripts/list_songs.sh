@@ -41,17 +41,14 @@ for dir in "$CHARACTER_DIR"/*; do
     readme="$dir/README.md"
     if [[ -f "$readme" ]]; then
       title=$(extract_after_heading "$readme" '^## (曲名|タイトル)')
-      audience=$(extract_after_heading "$readme" '^## 対象者')
-      if [[ -z "$audience" ]]; then
-        audience=$(extract_after_heading "$readme" '^## テーマ')
-      fi
+      theme=$(extract_after_heading "$readme" '^## テーマ')
       if [[ -z "$title" ]]; then
         title=$(basename "$dir")
       fi
-      if [[ -z "$audience" ]]; then
-        audience="不明"
+      if [[ -z "$theme" ]]; then
+        theme="不明"
       fi
-      songs+=("$title|$audience")
+      songs+=("$title|$theme")
     fi
   fi
 done
@@ -67,8 +64,8 @@ printf 'Songs: %d\n\n' "${#songs[@]}"
 idx=1
 for song in "${songs[@]}"; do
   title="${song%%|*}"
-  audience="${song##*|}"
+  theme="${song##*|}"
   printf '%d. %s\n' "$idx" "$title"
-  printf '   対象者: %s\n\n' "$audience"
+  printf '   テーマ: %s\n\n' "$theme"
   ((idx++)) || true
 done
