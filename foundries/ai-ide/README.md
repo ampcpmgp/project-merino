@@ -71,6 +71,35 @@ nginx の Lua モジュールを使って、nginx の再起動なしに短縮URL
 echo "https://github.com" > /workspace/url-shortcuts/gh
 ```
 
+## Supervisor 設定
+
+追加のサービスを supervisord で管理する場合、`/workspace/supervisor-conf.d/` ディレクトリ配下に `.conf` ファイルを配置します。
+
+### hermes gateway
+
+`hermes gateway` を appuser 権限で実行する設定例:
+
+```ini
+[program:hermes-gateway]
+command=hermes gateway
+autostart=true
+autorestart=true
+priority=50
+user=appuser
+environment=HOME="/home/appuser",USER="appuser"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+```
+
+設定ファイルを配置:
+
+```bash
+/mnt/g/workspace/supervisor-conf.d/hermes-gateway.conf
+```
+
+コンテナ起動時に自動的に読み込まれます。
+
 ## Docker
 
 ### build
