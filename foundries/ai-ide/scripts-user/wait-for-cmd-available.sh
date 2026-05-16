@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
+# wait-for-cmd-available.sh
+# Docker 上で指定したコマンドが PATH に見つかるようになるまで待機する
+#
+# 使い方:
+#   /home/appuser/app/scripts-user/wait-for-cmd-available.sh hermes
+#   WAIT_INTERVAL=2 WAIT_MAX_RETRIES=30 /home/appuser/app/scripts-user/wait-for-cmd-available.sh node
 
 set -euo pipefail
 
-INTERVAL="${WAIT_INTERVAL:-5}"
-MAX_RETRIES="${WAIT_MAX_RETRIES:-0}"
+INTERVAL="${WAIT_INTERVAL:-1}"
+MAX_RETRIES="${WAIT_MAX_RETRIES:-600}"
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <command>"
-    echo "Environment: WAIT_INTERVAL (default: 5), WAIT_MAX_RETRIES (default: 0=unlimited)"
+    echo "Environment: WAIT_INTERVAL (default: 1), WAIT_MAX_RETRIES (default: 600=10分)"
     exit 1
 fi
 
