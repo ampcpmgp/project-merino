@@ -24,6 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gosu \
     netcat-openbsd \
     gnupg \
+    ripgrep \
+    ffmpeg \
     supervisor \
     nginx-extras \
     graphicsmagick \
@@ -136,6 +138,8 @@ COPY config/nginx.conf /etc/nginx/sites-available/default
 # Convert all .sh files to unix format to avoid CRLF issues
 RUN find . -type f -name "*.sh" -exec dos2unix {} \;
 RUN find . -type f -name "*.sh" -exec chmod +x {} \;
+
+ENV HERMES_BACKUP_PATH=/workspace/hermes_backup/hermes.tar.gz
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]

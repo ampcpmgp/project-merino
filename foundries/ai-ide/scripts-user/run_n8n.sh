@@ -5,7 +5,6 @@ set -euo pipefail
 # 独自設定（プレフィックスで明確に区別）
 export CUSTOM_N8N_TAR_FILE="n8n.tar.gz"
 export CUSTOM_N8N_TAR_FILE_PATH="$HOME/$CUSTOM_N8N_TAR_FILE"
-export CUSTOM_N8N_BACKUP_DIR="$HOME/n8n_backup"
 export CUSTOM_N8N_WORKSPACE_CACHE_FILE="/workspace/n8n_data/n8n.tar.gz"
 
 # https://docs.n8n.io/hosting/configuration/configuration-examples/user-folder/
