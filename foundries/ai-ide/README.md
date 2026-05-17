@@ -81,7 +81,7 @@ echo "https://github.com" > /workspace/url-shortcuts/gh
 
 ```ini
 [program:hermes-gateway]
-command=/bin/bash -c '/home/appuser/app/scripts-user/wait-for-cmd-available.sh hermes && exec hermes gateway run'
+command=/bin/bash -c '/home/appuser/app/scripts-user/wait-for-cmd-available.sh hermes && exec hermes gateway run --replace'
 autostart=true
 autorestart=true
 priority=50
