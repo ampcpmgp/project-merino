@@ -35,6 +35,6 @@ while true; do
         exit 1
     fi
 
-    echo "[wait-for-cmd-available] Retry ${count}: '${CMD}' not found, waiting ${INTERVAL}s..."
+    # echo "[wait-for-cmd-available] Retry ${count}: '${CMD}' not found, waiting ${INTERVAL}s..."
     sleep "${INTERVAL}"
 done
