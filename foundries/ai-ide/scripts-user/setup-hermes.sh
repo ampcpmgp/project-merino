@@ -15,4 +15,9 @@ echo "[setup-hermes] Installing hermes-agent (latest main branch) ..."
 export POSTINSTALL_MODE=false
 curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s
 
+echo "[setup-hermes] Installing faster-whisper for local STT ..."
+VENV_PYTHON="/home/appuser/.hermes/hermes-agent/venv/bin/python"
+"$VENV_PYTHON" -m ensurepip --upgrade
+"$VENV_PYTHON" -m pip install faster-whisper
+
 echo "[setup-hermes] Done."
