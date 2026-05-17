@@ -132,7 +132,7 @@ COPY . .
 USER root
 RUN mkdir -p /workspace/public && \
     chown -R appuser:appuser /workspace
-COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY config/supervisord.conf /etc/supervisor/supervisord.conf
 COPY config/nginx.conf /etc/nginx/sites-available/default
 
 # Convert all .sh files to unix format to avoid CRLF issues
@@ -143,4 +143,4 @@ ENV HERMES_BACKUP_PATH=/workspace/hermes_backup/hermes.tar.gz
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

@@ -8,8 +8,8 @@
 
 set -euo pipefail
 
-INTERVAL="${WAIT_INTERVAL:-1}"
-MAX_RETRIES="${WAIT_MAX_RETRIES:-600}"
+INTERVAL="${WAIT_INTERVAL:-5}"
+MAX_RETRIES="${WAIT_MAX_RETRIES:-120}"
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <command>"
