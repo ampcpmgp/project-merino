@@ -84,7 +84,6 @@ echo "https://github.com" > /workspace/url-shortcuts/gh
 command=/bin/bash -c '/home/appuser/app/scripts-user/wait-for-cmd-available.sh hermes && exec hermes gateway run'
 autostart=true
 autorestart=true
-startsecs=5
 priority=50
 user=appuser
 environment=HOME="/home/appuser",USER="appuser"
