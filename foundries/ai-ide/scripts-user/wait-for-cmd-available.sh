@@ -13,7 +13,7 @@ MAX_RETRIES="${WAIT_MAX_RETRIES:-120}"
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <command>"
-    echo "Environment: WAIT_INTERVAL (default: 1), WAIT_MAX_RETRIES (default: 600=10分)"
+    echo "Environment: WAIT_INTERVAL (default: 5), WAIT_MAX_RETRIES (default: 120)"
     exit 1
 fi
 
@@ -35,6 +35,5 @@ while true; do
         exit 1
     fi
 
-    # echo "[wait-for-cmd-available] Retry ${count}: '${CMD}' not found, waiting ${INTERVAL}s..."
     sleep "${INTERVAL}"
 done
