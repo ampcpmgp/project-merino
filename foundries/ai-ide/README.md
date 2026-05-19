@@ -100,6 +100,10 @@ redirect_stderr=true
 
 コンテナ起動時に自動的に読み込まれます。
 
+## gbrain
+
+https://github.com/garrytan/gbrain
+
 ## Docker
 
 ### build
