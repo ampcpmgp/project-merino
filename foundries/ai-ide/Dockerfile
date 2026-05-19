@@ -112,6 +112,13 @@ RUN bun add -g \
 RUN bun add -g puppeteer@24.36.0
 RUN bunx puppeteer browsers install chrome@143.0.7499.192
 
+# Install gbrain
+USER appuser
+RUN git clone --depth 1 https://github.com/garrytan/gbrain.git /home/appuser/app/gbrain \
+    && cd /home/appuser/app/gbrain \
+    && bun install \
+    && bun link
+
 # Install SillyTavern
 USER appuser
 RUN git clone --depth 1 -b 1.18.0 https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
@@ -140,6 +147,9 @@ RUN find . -type f -name "*.sh" -exec dos2unix {} \;
 RUN find . -type f -name "*.sh" -exec chmod +x {} \;
 
 ENV HERMES_BACKUP_PATH=/workspace/hermes_backup/hermes.tar.gz
+ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
+ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
+
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]

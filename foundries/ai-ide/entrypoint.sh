@@ -19,7 +19,4 @@ echo "user:$(openssl passwd -apr1 "$NGINX_BASIC_PASSWORD")" > /etc/nginx/htpassw
 mkdir -p /workspace/supervisor-conf.d/
 chown -R appuser:appuser /workspace/supervisor-conf.d/ || true
 
-# Start hermes setup in background so it doesn't block supervisor logs
-su - appuser -s /bin/bash -c "export HERMES_BACKUP_PATH=${HERMES_BACKUP_PATH}; /home/appuser/app/scripts-user/setup-hermes.sh" &
-
 exec "$@"
