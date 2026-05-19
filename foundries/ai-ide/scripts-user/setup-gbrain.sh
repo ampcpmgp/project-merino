@@ -24,13 +24,4 @@ if [ ! -d /home/appuser/brain/.git ]; then
     git init
 fi
 
-# Upgrade: apply schema migrations and show migration notes
-# (source code is updated via Docker image rebuild)
-
-echo "[setup-gbrain] Running gbrain init (idempotent schema migration)..."
-gbrain init
-
-echo "[setup-gbrain] Running gbrain post-upgrade..."
-gbrain post-upgrade
-
 echo "[setup-gbrain] Done."
