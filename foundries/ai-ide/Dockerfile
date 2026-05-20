@@ -91,7 +91,7 @@ RUN bash -c '. /home/appuser/.bashrc && \
     curl -fsSL https://bun.sh/install | bash'
 
 ENV BUN_INSTALL="/home/appuser/.bun"
-ENV PATH="/home/appuser/.local/bin:$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:$PATH"
+ENV PATH="/home/appuser/.local/bin:$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:/home/appuser/.hermes/hermes-agent/venv/bin:$PATH"
 
 # Puppeteerのキャッシュディレクトリを固定
 ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
