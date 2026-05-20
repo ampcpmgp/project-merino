@@ -96,6 +96,11 @@ ENV PATH="/home/appuser/.local/bin:$BUN_INSTALL/bin:/home/appuser/.local/share/f
 # Puppeteerのキャッシュディレクトリを固定
 ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
 
+# Install hermes-agent (venv built at image build time — avoids runtime race with supervisord)
+USER appuser
+RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s -- --skip-setup
+
+USER root
 RUN bun add -g \
     n8n@2.19.5 \
     @anthropic-ai/claude-code@2.1.107 \
