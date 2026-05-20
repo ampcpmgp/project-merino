@@ -100,9 +100,7 @@ ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
 USER appuser
 RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s -- --skip-setup
 
-USER root
 RUN bun add -g \
-    n8n@2.19.5 \
     @anthropic-ai/claude-code@2.1.107 \
     ccusage@18.0.10 \
     opencode-ai@1.4.3 \
@@ -113,12 +111,14 @@ RUN bun add -g \
     js-yaml@4.1.1 \
     jsonrepair@3.14.0
 
+# n8n は bun ではなく npm でグローバルインストール（bun だとコマンドレジストリが空になる問題がある）
+RUN npm install -g n8n@2.19.5
+
 # chrome は n8n-puppeteer-node のバージョンに合わせる
 RUN bun add -g puppeteer@24.36.0
 RUN bunx puppeteer browsers install chrome@143.0.7499.192
 
 # Install gbrain
-USER appuser
 RUN git clone --depth 1 https://github.com/garrytan/gbrain.git /home/appuser/app/gbrain \
     && cd /home/appuser/app/gbrain \
     && bun install \

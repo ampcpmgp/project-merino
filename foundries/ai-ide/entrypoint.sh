@@ -19,4 +19,7 @@ echo "user:$(openssl passwd -apr1 "$NGINX_BASIC_PASSWORD")" > /etc/nginx/htpassw
 mkdir -p /workspace/supervisor-conf.d/
 chown -R appuser:appuser /workspace/supervisor-conf.d/ || true
 
+gosu appuser /home/appuser/app/scripts-user/setup-hermes.sh
+gosu appuser /home/appuser/app/scripts-user/setup-gbrain.sh
+
 exec "$@"
