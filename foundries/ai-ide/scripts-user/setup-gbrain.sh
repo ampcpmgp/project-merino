@@ -22,6 +22,10 @@ mkdir -p /home/appuser/brain
 if [ ! -d /home/appuser/brain/.git ]; then
     cd /home/appuser/brain
     git init
+    git config user.email "appuser@localhost"
+    git config user.name "appuser"
+    echo '# My Brain' > README.md
+    git add README.md && git commit -m "init brain"
 fi
 
 echo "[setup-gbrain] Done."
