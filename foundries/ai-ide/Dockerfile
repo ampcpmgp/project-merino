@@ -82,51 +82,58 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 RUN useradd -m -s /bin/bash appuser && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Install bun, fnm, and node packages as appuser
 USER appuser
-RUN bash -c "curl -fsSL https://fnm.vercel.app/install | bash"
+
+ENV PATH="/home/appuser/.local/bin:$PATH"
+
+RUN curl -fsSL https://fnm.vercel.app/install | bash
 ENV PATH="/home/appuser/.local/share/fnm:$PATH"
 
-RUN bash -c '. /home/appuser/.bashrc && \
-    fnm install v24 && fnm default v24 && \
-    curl -fsSL https://bun.sh/install | bash'
+RUN fnm install v24 && fnm default v24
+ENV PATH="/home/appuser/.local/share/fnm/aliases/default/bin:$PATH"
 
-ENV BUN_INSTALL="/home/appuser/.bun"
-ENV PATH="/home/appuser/.local/bin:$BUN_INSTALL/bin:/home/appuser/.local/share/fnm/aliases/default/bin:/home/appuser/.hermes/hermes-agent/venv/bin:$PATH"
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/home/appuser/.bun/bin:$PATH"
 
-# Puppeteerのキャッシュディレクトリを固定
-ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
+RUN npm install -g pnpm
+ENV PATH="/home/appuser/.local/share/pnpm/bin:$PATH"
 
-# Install hermes-agent (venv built at image build time — avoids runtime race with supervisord)
-USER appuser
-RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s -- --skip-setup
-
-RUN bun add -g \
-    @anthropic-ai/claude-code@2.1.107 \
-    ccusage@18.0.10 \
-    opencode-ai@1.4.3 \
+# n8n は pnpm/bun に公式対応していない
+# https://docs.n8n.io/hosting/installation/npm/
+RUN npm install -g \
+    n8n@2.19.5 \
+    @fal-ai/client@1.9.5 \
     minimist@1.2.8 \
     chai@6.2.2 \
     cross-fetch@4.1.0 \
-    @fal-ai/client@1.9.5 \
     js-yaml@4.1.1 \
     jsonrepair@3.14.0
 
-# n8n は bun ではなく npm でグローバルインストール（bun だとコマンドレジストリが空になる問題がある）
-RUN npm install -g n8n@2.19.5
+# CLI ツール類は pnpm で（n8n から require 不要）
+RUN pnpm add -g \
+    @anthropic-ai/claude-code@2.1.107 \
+    ccusage@18.0.10 \
+    opencode-ai@1.4.3
 
 # chrome は n8n-puppeteer-node のバージョンに合わせる
-RUN bun add -g puppeteer@24.36.0
-RUN bunx puppeteer browsers install chrome@143.0.7499.192
+RUN pnpm add -g puppeteer@24.36.0
+RUN pnpm dlx puppeteer browsers install chrome@143.0.7499.192
+ENV PUPPETEER_CACHE_DIR="/home/appuser/.cache/puppeteer"
 
-# Install gbrain
+# Install Hermes Agent
+RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s -- --skip-setup
+ENV PATH="/home/appuser/.hermes/hermes-agent/venv/bin:$PATH"
+ENV HERMES_BACKUP_PATH=/workspace/hermes_backup/hermes.tar.gz
+
+# Install GBrain
 RUN git clone --depth 1 https://github.com/garrytan/gbrain.git /home/appuser/app/gbrain \
     && cd /home/appuser/app/gbrain \
     && bun install \
     && bun link
+ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
+ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
 
 # Install SillyTavern
-USER appuser
 RUN git clone --depth 1 -b 1.18.0 https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
     && cd /home/appuser/app/SillyTavern \
     && npm install
@@ -151,11 +158,6 @@ COPY config/nginx.conf /etc/nginx/sites-available/default
 # Convert all .sh files to unix format to avoid CRLF issues
 RUN find . -type f -name "*.sh" -exec dos2unix {} \;
 RUN find . -type f -name "*.sh" -exec chmod +x {} \;
-
-ENV HERMES_BACKUP_PATH=/workspace/hermes_backup/hermes.tar.gz
-ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
-ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
-
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
