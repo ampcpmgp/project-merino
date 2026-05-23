@@ -159,6 +159,10 @@ COPY config/nginx.conf /etc/nginx/sites-available/default
 RUN find . -type f -name "*.sh" -exec dos2unix {} \;
 RUN find . -type f -name "*.sh" -exec chmod +x {} \;
 
+# workaround
+# https://github.com/garrytan/gbrain/issues/1247
+RUN echo "alias gbrain='timeout 3 gbrain'" >> /home/appuser/.bashrc
+
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
