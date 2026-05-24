@@ -161,7 +161,7 @@ RUN find . -type f -name "*.sh" -exec chmod +x {} \;
 
 # workaround
 # https://github.com/garrytan/gbrain/issues/1247
-RUN echo "alias gbrain='timeout 3 gbrain'" >> /home/appuser/.bashrc
+RUN sed -i '1c\gbrain() {\n  case "$1" in\n    get|query|search) command timeout 3 gbrain "$@";;\n    *) command gbrain "$@";;\n  esac\n}' /home/appuser/.bashrc
 
 # Set entrypoint
 ENTRYPOINT ["/home/appuser/app/entrypoint.sh"]
