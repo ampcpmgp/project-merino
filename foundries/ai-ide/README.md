@@ -75,48 +75,6 @@ echo "https://github.com" > /workspace/url-shortcuts/gh
 
 追加のサービスを supervisord で管理する場合、`/workspace/supervisor-conf.d/` ディレクトリ配下に `.conf` ファイルを配置します。
 
-## gbrain
-
-```bash
-# 現状のスキル確認
-hermes skills list
-
-# 以下だとまだ openai の dimentions になり gbream dream が動かない
-# gbrain init --pglite
-
-# zeroentropy 用の設定
-gbrain init --pglite --embedding-model zeroentropyai:zembed-1 --embedding-dimensions 1280
-gbrain config set sync.repo_path ~/brain
-cd ~/app/gbrain
-
-# dry-run で確認
-gbrain skillpack scaffold --workspace ~/.hermes/skills/gbrain --all --dry-run
-
-# 問題なければ実行
-gbrain skillpack scaffold --workspace ~/.hermes/skills/gbrain --all
-# profile を設定していれば ~/.hermes/profiles/kabuso-app/skills/gbrain 等
-
-hermes skills list
-```
-
-```bash
-### Hermes から GBrain スキルをアンインストールする方法
-rm -rf ~/.hermes/skills/gbrain
-hermes skills list
-```
-
-```bash
-### update する方法
-cd ~/app/gbrain
-
-gbrain check-update
-gbrain upgrade
-
-# スキル再インストール
-rm -rf ~/.hermes/skills/gbrain
-gbrain skillpack scaffold --workspace ~/.hermes/skills/gbrain --all
-```
-
 ## Docker
 
 ### build
