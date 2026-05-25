@@ -15,7 +15,7 @@ if [ -f /home/appuser/.hermes/hermes-agent/venv/bin/python ]; then
     echo "[setup-hermes] Installing faster-whisper for local STT ..."
     VENV_PYTHON="/home/appuser/.hermes/hermes-agent/venv/bin/python"
     "$VENV_PYTHON" -m ensurepip --upgrade
-    "$VENV_PYTHON" -m pip install faster-whisper
+    "$VENV_PYTHON" -m pip install faster-whisper numpy
 fi
 
 echo "[setup-hermes] Done."
