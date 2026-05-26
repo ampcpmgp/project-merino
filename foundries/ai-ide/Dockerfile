@@ -125,6 +125,14 @@ RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/
 ENV PATH="/home/appuser/.hermes/hermes-agent/venv/bin:$PATH"
 ENV HERMES_BACKUP_PATH=/workspace/hermes_backup/hermes.tar.gz
 
+# Install GBrain
+RUN git clone --depth 1 https://github.com/garrytan/gbrain.git /home/appuser/app/gbrain \
+    && cd /home/appuser/app/gbrain \
+    && bun install \
+    && bun link
+ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
+ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
+
 # Install SillyTavern
 RUN git clone --depth 1 -b 1.18.0 https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
     && cd /home/appuser/app/SillyTavern \

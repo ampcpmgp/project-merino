@@ -26,6 +26,11 @@
 - AWS_ENDPOINT_URL
 - AWS_BUCKET_NAME
 
+### GBrain
+
+対話しながら以下を進める
+<https://github.com/garrytan/gbrain#have-your-agent-install-it-recommended>
+
 ## 短縮URL機能
 
 nginx の Lua モジュールを使って、nginx の再起動なしに短縮URLをダイナミックに管理できます。

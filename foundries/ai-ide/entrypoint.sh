@@ -20,6 +20,7 @@ mkdir -p /workspace/supervisor-conf.d/
 chown -R appuser:appuser /workspace/supervisor-conf.d/ || true
 
 gosu appuser /home/appuser/app/scripts-user/setup-hermes.sh
+gosu appuser /home/appuser/app/scripts-user/setup-gbrain.sh
 
 echo "nameserver 8.8.8.8" >> /etc/resolv.conf
 
