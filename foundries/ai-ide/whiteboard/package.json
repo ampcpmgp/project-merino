@@ -1,0 +1,27 @@
+{
+  "name": "whiteboard",
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "storage"
+  ],
+  "scripts": {
+    "restore": "bash scripts/restore-data.sh",
+    "predev": "bun run restore",
+    "dev": "concurrently \"bun run dev:client\" \"bun run dev:server\" \"bun run dev:storage\"",
+    "dev:client": "PORT=3101 bun run --cwd client dev",
+    "preview:client": "PORT=3101 bun run --cwd client preview",
+    "dev:server": "PORT=3102 bun run --cwd server server.ts",
+    "dev:storage": "ENV=dev PORT=3103 bun run --cwd storage server.ts",
+    "stop": "pkill -f 'vite|bun.*server' || true",
+    "build:client": "bun run --cwd client build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "dependencies": {
+    "hono": "^4.12.8"
+  }
+}

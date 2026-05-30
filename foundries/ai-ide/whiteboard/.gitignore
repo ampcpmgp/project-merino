@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Bun
+bun.lock
+bun.lockb
+*/bun.lock
+*/bun.lockb
+
+# npm package-lock
+package-lock.json
+*/package-lock.json
+
+# Build outputs
+dist/
+*/dist/
+
+# Database
+db.sqlite
+*/db.sqlite
+*.sqlite
+*.db
+
+# Storage data
+storage/drawings
+storage/.local-backup
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

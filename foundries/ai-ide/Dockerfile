@@ -148,6 +148,21 @@ COPY --chown=appuser:appuser config/settings.json /home/appuser/.local/share/cod
 WORKDIR /home/appuser/app
 COPY . .
 
+# build whiteboard
+WORKDIR /home/appuser/app/whiteboard
+RUN bun install
+RUN bun run build:client
+
+# Clean up cache
+WORKDIR /home/appuser/app
+RUN rm -rf /home/appuser/.cache/*
+
+# Fix whiteboard permissions for runtime user (appuser)
+RUN chown -R appuser:appuser /home/appuser/app/whiteboard
+
+# Fix home directory permissions so nginx (www-data) can read whiteboard static files
+RUN chmod 755 /home/appuser
+
 # Set up root user
 USER root
 RUN mkdir -p /workspace/public && \

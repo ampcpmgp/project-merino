@@ -118,3 +118,28 @@ docker exec -it ai-ide /bin/bash
 docker images
 docker push --all-tags ofuton/ai-ide
 ```
+
+## Whiteboard (Excalidraw)
+
+Excalidraw を使ったホワイトボードアプリケーションが内蔵されています。
+
+### ポート構成
+
+| ポート | サービス | 説明 |
+|--------|---------|------|
+| 3100 | Whiteboard (Nginx) | Excalidraw フロントエンド + API 統合アクセス |
+| 3102 | Hocuspocus | WebSocket リアルタイム同期 + SQLite 永続化 |
+| 3103 | Storage API | Bun + Hono 永続化API（履歴管理/最大30世代） |
+
+### アクセス
+
+cloudflared 経由で `https://<your-domain>:3100` にアクセスするか、コンテナ内から `http://localhost:3100` でアクセスできます。
+
+認証は code-server と同じパスワード（`NGINX_BASIC_PASSWORD`）を使用します。
+
+### 技術スタック
+
+- **フロントエンド**: React 19, Vite 8, @excalidraw/excalidraw 0.18.0
+- **リアルタイム同期**: Yjs (CRDT) + Hocuspocus (WebSocket Server) + SQLite
+- **ストレージ**: Bun + Hono + Zod (履歴管理・tar.gz バックアップ)
+```

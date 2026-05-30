@@ -1,0 +1,14 @@
+{
+  "name": "whiteboard-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.ts",
+    "dev": "bun run server.ts"
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^2.15.0",
+    "@hocuspocus/extension-sqlite": "^2.15.0",
+    "yjs": "^13.6.30"
+  }
+}
