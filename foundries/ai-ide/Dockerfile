@@ -116,6 +116,10 @@ RUN pnpm add -g \
     ccusage@18.0.10 \
     opencode-ai@1.4.3
 
+# Clean up build caches before installing Chrome (keep image size down)
+# Note: DO NOT move this after Chrome install, it will wipe puppeteer's browser binary
+RUN rm -rf /home/appuser/.cache/bun /home/appuser/.cache/node /home/appuser/.cache/pnpm
+
 # chrome は n8n-puppeteer-node のバージョンに合わせる
 RUN pnpm add -g puppeteer@24.36.0
 RUN pnpm dlx puppeteer browsers install chrome@143.0.7499.192
@@ -156,8 +160,6 @@ RUN bun run build:client
 
 # Clean up cache
 WORKDIR /home/appuser/app
-RUN rm -rf /home/appuser/.cache/*
-
 # Fix whiteboard permissions for runtime user (appuser)
 RUN chown -R appuser:appuser /home/appuser/app/whiteboard
 
