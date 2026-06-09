@@ -60,6 +60,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# faster-whisper (ローカル音声認識、初回実行時にモデルを自動ダウンロード)
+RUN pip3 install faster-whisper --no-cache-dir
+
 # フォントキャッシュを更新（念のため追加）
 RUN fc-cache -fv
 
