@@ -57,6 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     cron \
     gh \
+    pandoc \
     ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
