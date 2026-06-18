@@ -173,8 +173,6 @@ RUN chmod 755 /home/appuser
 
 # Set up root user
 USER root
-RUN mkdir -p /workspace/public /workspace/private && \
-    chown -R appuser:appuser /workspace
 COPY config/supervisord.conf /etc/supervisor/supervisord.conf
 COPY config/nginx.conf /etc/nginx/sites-available/default
 
