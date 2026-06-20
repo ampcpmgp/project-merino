@@ -81,6 +81,9 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && ./aws/install \
     && rm -rf awscliv2.zip aws
 
+# Install rclone
+RUN curl -fsSL https://rclone.org/install.sh | bash
+
 # Create a non-root user
 RUN useradd -m -s /bin/bash appuser && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
