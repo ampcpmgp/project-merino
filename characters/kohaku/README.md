@@ -1,3 +1,8 @@
 # 琥珀
 
-- [YouTube Music](https://music.youtube.com/playlist?list=PLYlfgzenZpgStqTrz6yKqJj-CpitxTdD0&si=DsfEfUpYiwR-7c2W)
+- [基本情報](./基本情報.md)
+- [過去バージョン](./過去バージョン.md)
+
+## 楽曲
+
+- [おお、君の熱意が燃え盛る火のようだ！](./おお、君の熱意が燃え盛る火のようだ！/)
