@@ -1,0 +1,16 @@
+{
+  "name": "htmx-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --hot run src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.12.8"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -21,6 +21,7 @@ chown -R appuser:appuser /workspace/supervisor-conf.d/ || true
 
 gosu appuser /home/appuser/app/scripts-user/setup-hermes.sh
 gosu appuser /home/appuser/app/scripts-user/setup-gbrain.sh
+gosu appuser /home/appuser/app/scripts-user/setup-htmx-app.sh
 
 echo "nameserver 8.8.8.8" >> /etc/resolv.conf
 

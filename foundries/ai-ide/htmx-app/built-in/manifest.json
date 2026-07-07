@@ -1,0 +1,7 @@
+{
+  "tools": [
+    { "name": "echo",     "entry": "builtin:echo",     "description": "Echo back input text" },
+    { "name": "date",     "entry": "builtin:date",     "description": "Return current server date" },
+    { "name": "files",    "entry": "builtin:files",    "description": "List files in /workspace/private" }
+  ]
+}
