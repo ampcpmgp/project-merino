@@ -163,7 +163,7 @@ WORKDIR /home/appuser/app/whiteboard
 RUN bun install
 RUN bun run build:client
 
-# build htmx-app (generic server framework)
+# build htmx-app (minimal server framework)
 WORKDIR /home/appuser/app/htmx-app
 RUN bun install
 

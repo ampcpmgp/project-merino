@@ -130,16 +130,17 @@ Excalidraw を使ったホワイトボードアプリケーションが内蔵さ
 | 3100 | Whiteboard (Nginx) | Excalidraw フロントエンド + API 統合アクセス |
 | 3102 | Hocuspocus | WebSocket リアルタイム同期 + SQLite 永続化 |
 | 3103 | Storage API | Bun + Hono 永続化API（履歴管理/最大30世代） |
-| 3200 | htmx-app (Nginx) | 汎用サーバーフレームワーク（ファイルI/O・ツール実行） |
+| 3200 | htmx-app (Bun) | 汎用サーバーフレームワーク（AI・ファイルI/O・ツール実行） |
 
 ### htmx-app
 
-汎用 htmx + Bun/Hono サーバーフレームワーク。Docker イメージに共通コードを同梱し、カスタムスクリプトは `/workspace/private/htmx-app/scripts/` に配置して動的ロードする。
+最小構成の Bun + Hono + htmx サーバー。Docker イメージに共通コードを同梱し、カスタムスクリプトは `/workspace/private/htmx-app/scripts/` に配置して動的ロードする。
 
-- **ポート**: 3200（Nginx Basic Auth 付き）
-- **技術スタック**: Bun + Hono + htmx
-- **動的ロード**: `/workspace/private/htmx-app/scripts/*.ts` を自動認識
-- **セキュリティ**: パス制限・コマンド allowlist 付き
+- **ポート**: 3200（Nginx port 81 の `/htmx-app/` 経由で Basic Auth 付きアクセス）
+- **技術スタック**: Bun + Hono + htmx + OpenAI 互換 API
+- **エンドポイント**: `POST /hermes` (AI), `POST /exec/:name` (スクリプト), `GET /read` (ファイル)
+- **動的ロード**: `/workspace/private/htmx-app/scripts/*.ts` を自動認識（再起動不要）
+- **セキュリティ**: APIキーはサーバー側のみ保持、パス制限付き、Basic Auth
 - **初回seed**: `entrypoint.sh` → `setup-htmx-app.sh` で `/workspace` にコピー
 
 ### アクセス
