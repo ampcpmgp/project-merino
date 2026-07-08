@@ -9,74 +9,92 @@ const app = new Hono()
 // ── セッション状態 ──
 let currentSessionId = ''
 
-// ── OOB フラグメント: セッション中（Ask Hermes + New Chat）──
-function sessionButtonsOob(): string {
-  return `<span id="form-buttons" hx-swap-oob="innerHTML">\
-<button type="submit" class="btn-primary btn-loader">Ask Hermes</button>\
-<button type="button" class="btn-outline btn-loader" \
-hx-post="/html-api/hermes/new" \
-hx-target="#hermes-output" \
-onclick="document.getElementById('session-badge').textContent='🆕 新しい会話'">New Chat</button>\
-</span>`
-}
+// ═══════════════════════════════════════════
+// JSON API — `/api/` 配下はすべて JSON 応答
+// ═══════════════════════════════════════════
 
-// ── OOB フラグメント: 初期状態（New Chat のみ）──
-function initialButtonsOob(): string {
-  return `<span id="form-buttons" hx-swap-oob="innerHTML">\
-<button type="submit" class="btn-primary btn-loader">New Chat</button>\
-</span>`
-}
-
-// ── Hermes AI チャット（会話セッション継続）──
-app.post('/hermes/form', async (c) => {
+// ── Hermes AI チャット ──
+app.post('/api/hermes/form', async (c) => {
   try {
-    const body = await c.req.parseBody()
-    const prompt = (body.prompt as string) || ''
-    if (!prompt) return c.html('<p style="color:red">No prompt</p>')
-    const hadSession = !!currentSessionId
+    const { prompt } = await c.req.json()
+    if (!prompt) return c.json({ ok: false, error: 'No prompt' })
     const { response, sessionId } = await askHermes(prompt, currentSessionId)
+    const hadSession = !!currentSessionId
     currentSessionId = sessionId || currentSessionId
-    // 初回送信時はボタンをセッションモードに切り替え
-    const oob = hadSession ? '' : sessionButtonsOob()
-    return c.html(`<pre>${escapeHtml(response)}</pre>${oob}`)
+    return c.json({ ok: true, response, session_active: !hadSession || !!currentSessionId })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[hermes/form] Error:', msg)
-    return c.html(`<pre style="color:red">Error: ${escapeHtml(msg)}</pre>`)
+    console.error('[api/hermes/form] Error:', msg)
+    return c.json({ ok: false, error: msg })
   }
 })
 
-// ── 新規会話（セッションリセット）──
-app.post('/hermes/new', async (c) => {
+// ── 新規会話 ──
+app.post('/api/hermes/new', async (c) => {
   currentSessionId = ''
-  return c.html(`<p style="color:#64748b; font-size:0.9rem;">🆕 新しい会話を開始しました</p>${initialButtonsOob()}`)
+  return c.json({ ok: true, session_active: false })
 })
 
 // ── カスタムスクリプト実行 ──
-app.post('/exec/:name', async (c) => {
+app.post('/api/exec/:name', async (c) => {
   const name = c.req.param('name')
   const dirs = ['/workspace/private/html-api/scripts', '/home/appuser/app/html-api/scripts-sample']
-  let lastErr = ''
   for (const dir of dirs) {
     const scriptPath = `${dir}/${name}.ts`
     try {
       const mod = await import(scriptPath)
       const result = await mod.default(c)
       const html = typeof result === 'string' ? result : JSON.stringify(result)
-      return c.html(`<pre>${html}</pre>`)
+      return c.json({ ok: true, html: `<pre>${html}</pre>` })
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
-      if (msg.includes('Cannot find module')) {
-        lastErr = msg
-        continue
-      }
-      return c.html(`<pre style="color:red">Script error (${name}): ${escapeHtml(msg)}</pre>`)
+      if (msg.includes('Cannot find module')) continue
+      return c.json({ ok: false, error: msg })
     }
   }
-  return c.html(`<pre style="color:red">Script '${name}' not found in any directory.</pre>`)
+  return c.json({ ok: false, error: `Script '${name}' not found` })
 })
 
 // ── ファイル読み取り ──
+app.get('/api/read', async (c) => {
+  const path = c.req.query('path') || ''
+  const fullPath = `/workspace/private/${path}`
+  try {
+    const content = await Bun.file(fullPath).text()
+    return c.json({ ok: true, content })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg })
+  }
+})
+
+// ── Ping ──
+app.get('/api/ping', (c) => c.json({ ok: true }))
+
+// ═══════════════════════════════════════════
+// 旧来の HTML エンドポイント（非推奨）
+// 移行完了後削除予定
+// ═══════════════════════════════════════════
+
+app.post('/hermes/form', async (c) => {
+  const body = await c.req.parseBody()
+  const prompt = (body.prompt as string) || ''
+  if (!prompt) return c.html('<p style="color:red">No prompt</p>')
+  try {
+    const { response, sessionId } = await askHermes(prompt, currentSessionId)
+    currentSessionId = sessionId || currentSessionId
+    return c.html(`<pre>${escapeHtml(response)}</pre>`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.html(`<pre style="color:red">Error: ${escapeHtml(msg)}</pre>`)
+  }
+})
+
+app.post('/hermes/new', async () => {
+  currentSessionId = ''
+  return c.html('<p>🆕 新しい会話</p>')
+})
+
 app.get('/read', async (c) => {
   const path = c.req.query('path') || ''
   const fullPath = `/workspace/private/${path}`
@@ -89,6 +107,27 @@ app.get('/read', async (c) => {
   }
 })
 
+app.post('/exec/:name', async (c) => {
+  const name = c.req.param('name')
+  const dirs = ['/workspace/private/html-api/scripts', '/home/appuser/app/html-api/scripts-sample']
+  for (const dir of dirs) {
+    const scriptPath = `${dir}/${name}.ts`
+    try {
+      const mod = await import(scriptPath)
+      const result = await mod.default(c)
+      const html = typeof result === 'string' ? result : JSON.stringify(result)
+      return c.html(`<pre>${html}</pre>`)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('Cannot find module')) continue
+      return c.html(`<pre style="color:red">Script error: ${escapeHtml(msg)}</pre>`)
+    }
+  }
+  return c.html(`<pre style="color:red">Script not found</pre>`)
+})
+
+app.get('/ping', (c) => c.text('ok'))
+
 // ── CORS ──
 app.use('*', async (c, next) => {
   c.res.headers.set('Access-Control-Allow-Origin', '*')
@@ -98,10 +137,7 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-// ── ステータス ──
-app.get('/ping', (c) => c.text('ok'))
-
-// ── Hermes CLI 呼び出し（セッション対応）──
+// ── Hermes CLI 呼び出し ──
 async function askHermes(prompt: string, sessionId: string): Promise<{ response: string; sessionId: string }> {
   const args = ['chat', '-q', prompt, '--quiet']
   if (sessionId) args.push('--resume', sessionId)
@@ -118,16 +154,13 @@ async function askHermes(prompt: string, sessionId: string): Promise<{ response:
   const exitCode = await new Promise<number>((resolve) => proc.on('close', resolve))
 
   if (exitCode !== 0) {
-    throw new Error(`hermes exited ${exitCode}: ${stderr.trim() || stdout.trim()}`)
+    throw new Error(`hermes exited ${exitCode}: ${(stderr || stdout).trim()}`)
   }
 
-  // session_id は stderr に出力される。stdout = 応答本文のみ
   let extractedSessionId = sessionId
   for (const line of stderr.split('\n')) {
-    const trimmed = line.trim()
-    if (trimmed.startsWith('session_id:')) {
-      extractedSessionId = trimmed.replace(/^session_id:\s*/, '').trim()
-    }
+    const t = line.trim()
+    if (t.startsWith('session_id:')) extractedSessionId = t.replace(/^session_id:\s*/, '').trim()
   }
   return { response: stdout.trim(), sessionId: extractedSessionId }
 }
