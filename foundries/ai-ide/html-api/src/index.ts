@@ -67,6 +67,9 @@ app.use('*', async (c, next) => {
   await next()
 })
 
+// ── ステータス（シンプルテキスト）──
+app.get('/ping', (c) => c.text('ok'))
+
 // ── ヘルスチェック ──
 app.get('/health', (c) => c.json({
   status: 'ok', port: PORT,
