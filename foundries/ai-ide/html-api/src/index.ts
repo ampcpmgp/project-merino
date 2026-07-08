@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
+import { spawn } from 'child_process'
 
 const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
 
@@ -8,15 +9,36 @@ const app = new Hono()
 // ── セッション状態 ──
 let currentSessionId = ''
 
+// ── OOB フラグメント: セッション中（Ask Hermes + New Chat）──
+function sessionButtonsOob(): string {
+  return `<span id="form-buttons" hx-swap-oob="innerHTML">\
+<button type="submit" class="btn-primary btn-loader">Ask Hermes</button>\
+<button type="button" class="btn-outline btn-loader" \
+hx-post="/html-api/hermes/new" \
+hx-target="#hermes-output" \
+onclick="document.getElementById('session-badge').textContent='🆕 新しい会話'">New Chat</button>\
+</span>`
+}
+
+// ── OOB フラグメント: 初期状態（New Chat のみ）──
+function initialButtonsOob(): string {
+  return `<span id="form-buttons" hx-swap-oob="innerHTML">\
+<button type="submit" class="btn-primary btn-loader">New Chat</button>\
+</span>`
+}
+
 // ── Hermes AI チャット（会話セッション継続）──
 app.post('/hermes/form', async (c) => {
   try {
     const body = await c.req.parseBody()
     const prompt = (body.prompt as string) || ''
     if (!prompt) return c.html('<p style="color:red">No prompt</p>')
+    const hadSession = !!currentSessionId
     const { response, sessionId } = await askHermes(prompt, currentSessionId)
     currentSessionId = sessionId || currentSessionId
-    return c.html(`<pre>${escapeHtml(response)}</pre>`)
+    // 初回送信時はボタンをセッションモードに切り替え
+    const oob = hadSession ? '' : sessionButtonsOob()
+    return c.html(`<pre>${escapeHtml(response)}</pre>${oob}`)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[hermes/form] Error:', msg)
@@ -27,7 +49,7 @@ app.post('/hermes/form', async (c) => {
 // ── 新規会話（セッションリセット）──
 app.post('/hermes/new', async (c) => {
   currentSessionId = ''
-  return c.html('<p style="color:#64748b; font-size:0.9rem;">🆕 新しい会話を開始しました</p>')
+  return c.html(`<p style="color:#64748b; font-size:0.9rem;">🆕 新しい会話を開始しました</p>${initialButtonsOob()}`)
 })
 
 // ── カスタムスクリプト実行 ──
@@ -84,33 +106,30 @@ async function askHermes(prompt: string, sessionId: string): Promise<{ response:
   const args = ['chat', '-q', prompt, '--quiet']
   if (sessionId) args.push('--resume', sessionId)
 
-  const proc = Bun.spawn(['hermes', ...args], {
-    env: { ...process.env },
+  const proc = spawn('hermes', args, {
+    env: { ...process.env, HOME: process.env.HOME || '/home/appuser' },
     timeout: 120_000,
   })
-  const stdout = await new Response(proc.stdout).text()
-  const exitCode = await proc.exited
+
+  const [stdout, stderr] = await Promise.all([
+    new Promise<string>((resolve) => { let d = ''; proc.stdout!.on('data', (c: Buffer) => d += c); proc.stdout!.on('end', () => resolve(d)) }),
+    new Promise<string>((resolve) => { let d = ''; proc.stderr!.on('data', (c: Buffer) => d += c); proc.stderr!.on('end', () => resolve(d)) }),
+  ])
+  const exitCode = await new Promise<number>((resolve) => proc.on('close', resolve))
+
   if (exitCode !== 0) {
-    const stderr = await new Response(proc.stderr).text()
-    throw new Error(`hermes exited ${exitCode}: ${stderr.trim()}`)
+    throw new Error(`hermes exited ${exitCode}: ${stderr.trim() || stdout.trim()}`)
   }
 
-  // 出力をパース: メタ行（↻, session_id）を除去し、応答本文のみ抽出
-  const lines = stdout.split('\n')
-  const bodyLines: string[] = []
+  // session_id は stderr に出力される。stdout = 応答本文のみ
   let extractedSessionId = sessionId
-  for (const line of lines) {
+  for (const line of stderr.split('\n')) {
     const trimmed = line.trim()
-    // メタ行をスキップ
-    if (trimmed === '' || trimmed.startsWith('↻') || trimmed.startsWith('session_id:')) {
-      if (trimmed.startsWith('session_id:')) {
-        extractedSessionId = trimmed.replace(/^session_id:\s*/, '').trim()
-      }
-      continue
+    if (trimmed.startsWith('session_id:')) {
+      extractedSessionId = trimmed.replace(/^session_id:\s*/, '').trim()
     }
-    bodyLines.push(line)
   }
-  return { response: bodyLines.join('\n').trim(), sessionId: extractedSessionId }
+  return { response: stdout.trim(), sessionId: extractedSessionId }
 }
 
 function escapeHtml(s: string): string {
