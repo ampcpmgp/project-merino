@@ -163,8 +163,8 @@ WORKDIR /home/appuser/app/whiteboard
 RUN bun install
 RUN bun run build:client
 
-# build htmx-app (minimal server framework)
-WORKDIR /home/appuser/app/htmx-app
+# build html-api (minimal server framework)
+WORKDIR /home/appuser/app/html-api
 RUN bun install
 
 # Clean up cache
@@ -172,7 +172,7 @@ WORKDIR /home/appuser/app
 # Fix whiteboard permissions for runtime user (appuser)
 RUN chown -R appuser:appuser /home/appuser/app/whiteboard
 # Fix htmx-app permissions
-RUN chown -R appuser:appuser /home/appuser/app/htmx-app
+RUN chown -R appuser:appuser /home/appuser/app/html-api
 
 # Fix home directory permissions so nginx (www-data) can read whiteboard static files
 RUN chmod 755 /home/appuser

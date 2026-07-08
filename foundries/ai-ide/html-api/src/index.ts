@@ -30,7 +30,7 @@ app.post('/hermes/form', async (c) => {
 // ── カスタムスクリプト実行 ──
 app.post('/exec/:name', async (c) => {
   const name = c.req.param('name')
-  const dirs = ['/workspace/private/htmx-app/scripts', '/home/appuser/app/htmx-app/scripts-sample']
+  const dirs = ['/workspace/private/html-api/scripts', '/home/appuser/app/html-api/scripts-sample']
   let lastErr = ''
   for (const dir of dirs) {
     const scriptPath = `${dir}/${name}.ts`
