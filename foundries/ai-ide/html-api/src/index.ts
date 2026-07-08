@@ -3,28 +3,15 @@ import { serve } from 'bun'
 
 const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
 
-// Hermes の API 設定（config.yaml + .env から継承）
-const API_KEY = process.env.OPENCODE_GO_API_KEY || ''
-const BASE_URL = process.env.OPENCODE_GO_BASE_URL || 'https://opencode.ai/zen/go/v1'
-const MODEL = 'deepseek-v4-flash'
-const CHAT_URL = `${BASE_URL}/chat/completions`
-
 const app = new Hono()
 
-// ── Hermes API 呼び出し（OpenAI 互換）──
-app.post('/hermes', async (c) => {
-  const { prompt } = await c.req.json()
-  if (!prompt) return c.text('Missing prompt', 400)
-  const content = await askAI(prompt)
-  return c.html(`<pre>${escapeHtml(content)}</pre>`)
-})
-
+// ── Hermes AI チャット（hermes CLI 経由）──
 app.post('/hermes/form', async (c) => {
   try {
     const body = await c.req.parseBody()
     const prompt = (body.prompt as string) || ''
     if (!prompt) return c.html('<p style="color:red">No prompt</p>')
-    const content = await askAI(prompt)
+    const content = await askHermes(prompt)
     return c.html(`<pre>${escapeHtml(content)}</pre>`)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -42,18 +29,15 @@ app.post('/exec/:name', async (c) => {
     const scriptPath = `${dir}/${name}.ts`
     try {
       const mod = await import(scriptPath)
-      // モジュールが見つかった → ここで失敗したら即座にエラー報告
       const result = await mod.default(c)
       const html = typeof result === 'string' ? result : JSON.stringify(result)
       return c.html(`<pre>${html}</pre>`)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
-      // "Cannot find module" はモジュール不在 → 次のディレクトリへ
       if (msg.includes('Cannot find module')) {
         lastErr = msg
         continue
       }
-      // それ以外はスクリプト実行エラー → 即座に報告
       return c.html(`<pre style="color:red">Script error (${name}): ${escapeHtml(msg)}</pre>`)
     }
   }
@@ -82,36 +66,27 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-// ── ステータス（シンプルテキスト）──
+// ── ステータス ──
 app.get('/ping', (c) => c.text('ok'))
 
-// ── ヘルスチェック ──
-app.get('/health', (c) => c.json({
-  status: 'ok', port: PORT,
-  model: MODEL, api: CHAT_URL.replace(API_KEY, '***') // APIキーをログに出さない
-}))
-
-// ── AI API 呼び出し関数（OpenAI 互換） ──
-async function askAI(prompt: string): Promise<string> {
-  const res = await fetch(CHAT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      stream: false,
-    }),
-    signal: AbortSignal.timeout(120_000),
+// ── Hermes CLI 呼び出し ──
+async function askHermes(prompt: string): Promise<string> {
+  const proc = Bun.spawn(['hermes', 'chat', '-q', prompt, '--quiet'], {
+    env: { ...process.env },
+    timeout: 120_000,
   })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`API ${res.status}: ${text.slice(0, 200)}`)
+  const stdout = await new Response(proc.stdout).text()
+  const exitCode = await proc.exited
+  if (exitCode !== 0) {
+    const stderr = await new Response(proc.stderr).text()
+    throw new Error(`hermes exited ${exitCode}: ${stderr.trim()}`)
   }
-  const data = await res.json()
-  return data.choices?.[0]?.message?.content ?? '(empty response)'
+  // 1行目は "session_id: xxx" なのでスキップ
+  const lines = stdout.trim().split('\n')
+  if (lines[0]?.startsWith('session_id:')) {
+    return lines.slice(1).join('\n').trim()
+  }
+  return stdout.trim()
 }
 
 function escapeHtml(s: string): string {
@@ -119,5 +94,4 @@ function escapeHtml(s: string): string {
 }
 
 serve({ port: PORT, fetch: app.fetch })
-console.log(`[htmx-app] Running on http://localhost:${PORT}`)
-console.log(`[htmx-app] Model: ${MODEL}, API: ${CHAT_URL.replace(API_KEY, '***')}`)
+console.log(`[html-api] Running on http://localhost:${PORT}`)
