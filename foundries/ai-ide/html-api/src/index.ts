@@ -44,8 +44,8 @@ app.post('/api/exec/:name', async (c) => {
     try {
       const mod = await import(scriptPath)
       const result = await mod.default(c)
-      const html = typeof result === 'string' ? result : JSON.stringify(result)
-      return c.json({ ok: true, html: `<pre>${html}</pre>` })
+      const output = typeof result === 'string' ? result : JSON.stringify(result)
+      return c.json({ ok: true, output: `<pre>${output}</pre>` })
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       if (msg.includes('Cannot find module')) continue

@@ -1,5 +1,5 @@
 // /workspace/private/html-api/scripts/hello.ts
-// サンプルユーザースクリプト — 動的ロードの動作確認用
+// サンプルユーザースクリプト — 動的ロードの動作確認用（JSON API 対応）
 
 export default async function (c: any) {
   const now = new Date().toISOString()
@@ -10,11 +10,10 @@ export default async function (c: any) {
   for await (const file of glob.scan({ cwd: dir })) {
     files.push(file)
   }
-  return `
-<p>👋 Hello from <code>${dir}/hello.ts</code></p>
-<ul>
-  <li>Server time: ${now}</li>
-  <li>Detected scripts: ${files.join(', ') || '(none)'}</li>
-  <li>Script loaded dynamically — no server restart needed</li>
-</ul>`
+  return JSON.stringify({
+    message: '👋 Hello from hello.ts',
+    serverTime: now,
+    detectedScripts: files,
+    dir,
+  })
 }
