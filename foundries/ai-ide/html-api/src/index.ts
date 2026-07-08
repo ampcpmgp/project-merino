@@ -14,7 +14,7 @@ let currentSessionId = ''
 // ═══════════════════════════════════════════
 
 // ── Hermes AI チャット ──
-app.post('/api/hermes/form', async (c) => {
+app.post('/api/hermes/chat', async (c) => {
   try {
     const { prompt } = await c.req.json()
     if (!prompt) return c.json({ ok: false, error: 'No prompt' })
@@ -24,7 +24,7 @@ app.post('/api/hermes/form', async (c) => {
     return c.json({ ok: true, response, session_active: !hadSession || !!currentSessionId })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[api/hermes/form] Error:', msg)
+    console.error('[api/hermes/chat] Error:', msg)
     return c.json({ ok: false, error: msg })
   }
 })
@@ -71,63 +71,6 @@ app.get('/api/read', async (c) => {
 // ── Ping ──
 app.get('/api/ping', (c) => c.json({ ok: true }))
 
-// ═══════════════════════════════════════════
-// 旧来の HTML エンドポイント（非推奨）
-// 移行完了後削除予定
-// ═══════════════════════════════════════════
-
-app.post('/hermes/form', async (c) => {
-  const body = await c.req.parseBody()
-  const prompt = (body.prompt as string) || ''
-  if (!prompt) return c.html('<p style="color:red">No prompt</p>')
-  try {
-    const { response, sessionId } = await askHermes(prompt, currentSessionId)
-    currentSessionId = sessionId || currentSessionId
-    return c.html(`<pre>${escapeHtml(response)}</pre>`)
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return c.html(`<pre style="color:red">Error: ${escapeHtml(msg)}</pre>`)
-  }
-})
-
-app.post('/hermes/new', async () => {
-  currentSessionId = ''
-  return c.html('<p>🆕 新しい会話</p>')
-})
-
-app.get('/read', async (c) => {
-  const path = c.req.query('path') || ''
-  const fullPath = `/workspace/private/${path}`
-  try {
-    const content = await Bun.file(fullPath).text()
-    return c.html(`<pre>${escapeHtml(content)}</pre>`)
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return c.html(`<pre style="color:red">Error: ${escapeHtml(msg)}</pre>`)
-  }
-})
-
-app.post('/exec/:name', async (c) => {
-  const name = c.req.param('name')
-  const dirs = ['/workspace/private/html-api/scripts', '/home/appuser/app/html-api/scripts-sample']
-  for (const dir of dirs) {
-    const scriptPath = `${dir}/${name}.ts`
-    try {
-      const mod = await import(scriptPath)
-      const result = await mod.default(c)
-      const html = typeof result === 'string' ? result : JSON.stringify(result)
-      return c.html(`<pre>${html}</pre>`)
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      if (msg.includes('Cannot find module')) continue
-      return c.html(`<pre style="color:red">Script error: ${escapeHtml(msg)}</pre>`)
-    }
-  }
-  return c.html(`<pre style="color:red">Script not found</pre>`)
-})
-
-app.get('/ping', (c) => c.text('ok'))
-
 // ── CORS ──
 app.use('*', async (c, next) => {
   c.res.headers.set('Access-Control-Allow-Origin', '*')
@@ -163,10 +106,6 @@ async function askHermes(prompt: string, sessionId: string): Promise<{ response:
     if (t.startsWith('session_id:')) extractedSessionId = t.replace(/^session_id:\s*/, '').trim()
   }
   return { response: stdout.trim(), sessionId: extractedSessionId }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 serve({ port: PORT, fetch: app.fetch })
