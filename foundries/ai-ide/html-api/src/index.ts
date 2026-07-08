@@ -5,19 +5,29 @@ const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
 
 const app = new Hono()
 
-// ── Hermes AI チャット（hermes CLI 経由）──
+// ── セッション状態 ──
+let currentSessionId = ''
+
+// ── Hermes AI チャット（会話セッション継続）──
 app.post('/hermes/form', async (c) => {
   try {
     const body = await c.req.parseBody()
     const prompt = (body.prompt as string) || ''
     if (!prompt) return c.html('<p style="color:red">No prompt</p>')
-    const content = await askHermes(prompt)
-    return c.html(`<pre>${escapeHtml(content)}</pre>`)
+    const { response, sessionId } = await askHermes(prompt, currentSessionId)
+    currentSessionId = sessionId || currentSessionId
+    return c.html(`<pre>${escapeHtml(response)}</pre>`)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[hermes/form] Error:', msg)
     return c.html(`<pre style="color:red">Error: ${escapeHtml(msg)}</pre>`)
   }
+})
+
+// ── 新規会話（セッションリセット）──
+app.post('/hermes/new', async (c) => {
+  currentSessionId = ''
+  return c.html('<p style="color:#64748b; font-size:0.9rem;">🆕 新しい会話を開始しました</p>')
 })
 
 // ── カスタムスクリプト実行 ──
@@ -69,9 +79,12 @@ app.use('*', async (c, next) => {
 // ── ステータス ──
 app.get('/ping', (c) => c.text('ok'))
 
-// ── Hermes CLI 呼び出し ──
-async function askHermes(prompt: string): Promise<string> {
-  const proc = Bun.spawn(['hermes', 'chat', '-q', prompt, '--quiet'], {
+// ── Hermes CLI 呼び出し（セッション対応）──
+async function askHermes(prompt: string, sessionId: string): Promise<{ response: string; sessionId: string }> {
+  const args = ['chat', '-q', prompt, '--quiet']
+  if (sessionId) args.push('--resume', sessionId)
+
+  const proc = Bun.spawn(['hermes', ...args], {
     env: { ...process.env },
     timeout: 120_000,
   })
@@ -81,12 +94,23 @@ async function askHermes(prompt: string): Promise<string> {
     const stderr = await new Response(proc.stderr).text()
     throw new Error(`hermes exited ${exitCode}: ${stderr.trim()}`)
   }
-  // 1行目は "session_id: xxx" なのでスキップ
-  const lines = stdout.trim().split('\n')
-  if (lines[0]?.startsWith('session_id:')) {
-    return lines.slice(1).join('\n').trim()
+
+  // 出力をパース: メタ行（↻, session_id）を除去し、応答本文のみ抽出
+  const lines = stdout.split('\n')
+  const bodyLines: string[] = []
+  let extractedSessionId = sessionId
+  for (const line of lines) {
+    const trimmed = line.trim()
+    // メタ行をスキップ
+    if (trimmed === '' || trimmed.startsWith('↻') || trimmed.startsWith('session_id:')) {
+      if (trimmed.startsWith('session_id:')) {
+        extractedSessionId = trimmed.replace(/^session_id:\s*/, '').trim()
+      }
+      continue
+    }
+    bodyLines.push(line)
   }
-  return stdout.trim()
+  return { response: bodyLines.join('\n').trim(), sessionId: extractedSessionId }
 }
 
 function escapeHtml(s: string): string {
