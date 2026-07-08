@@ -20,11 +20,17 @@ app.post('/hermes', async (c) => {
 })
 
 app.post('/hermes/form', async (c) => {
-  const body = await c.req.parseBody()
-  const prompt = (body.prompt as string) || ''
-  if (!prompt) return c.html('<p style="color:red">No prompt</p>')
-  const content = await askAI(prompt)
-  return c.html(`<pre>${escapeHtml(content)}</pre>`)
+  try {
+    const body = await c.req.parseBody()
+    const prompt = (body.prompt as string) || ''
+    if (!prompt) return c.html('<p style="color:red">No prompt</p>')
+    const content = await askAI(prompt)
+    return c.html(`<pre>${escapeHtml(content)}</pre>`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[hermes/form] Error:', msg)
+    return c.html(`<pre style="color:red">Error: ${escapeHtml(msg)}</pre>`)
+  }
 })
 
 // ── カスタムスクリプト実行 ──
@@ -36,13 +42,22 @@ app.post('/exec/:name', async (c) => {
     const scriptPath = `${dir}/${name}.ts`
     try {
       const mod = await import(scriptPath)
+      // モジュールが見つかった → ここで失敗したら即座にエラー報告
       const result = await mod.default(c)
-      return c.html(typeof result === 'string' ? result : JSON.stringify(result))
+      const html = typeof result === 'string' ? result : JSON.stringify(result)
+      return c.html(`<pre>${html}</pre>`)
     } catch (e: unknown) {
-      lastErr = e instanceof Error ? e.message : String(e)
+      const msg = e instanceof Error ? e.message : String(e)
+      // "Cannot find module" はモジュール不在 → 次のディレクトリへ
+      if (msg.includes('Cannot find module')) {
+        lastErr = msg
+        continue
+      }
+      // それ以外はスクリプト実行エラー → 即座に報告
+      return c.html(`<pre style="color:red">Script error (${name}): ${escapeHtml(msg)}</pre>`)
     }
   }
-  return c.html(`<pre style="color:red">Error: ${escapeHtml(lastErr)}</pre>`)
+  return c.html(`<pre style="color:red">Script '${name}' not found in any directory.</pre>`)
 })
 
 // ── ファイル読み取り ──
@@ -73,7 +88,7 @@ app.get('/ping', (c) => c.text('ok'))
 // ── ヘルスチェック ──
 app.get('/health', (c) => c.json({
   status: 'ok', port: PORT,
-  model: MODEL, api: CHAT_URL.replace(API_KEY, '***')
+  model: MODEL, api: CHAT_URL.replace(API_KEY, '***') // APIキーをログに出さない
 }))
 
 // ── AI API 呼び出し関数（OpenAI 互換） ──
