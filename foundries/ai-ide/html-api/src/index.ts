@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
 
-const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
+const PORT = 3200
 
 // Hermes API Server (同一コンテナ内 localhost:8642)
 // AIキーは Docker .env の HERMES_API_KEY から継承される
