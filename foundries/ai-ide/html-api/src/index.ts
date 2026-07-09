@@ -1,45 +1,162 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
-import { spawn } from 'child_process'
 
 const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
 
+// Hermes API Server (port 8642) — Sessions API (セッション管理 + SSE)
+// APIキーは gateway が自動生成した値を上書きするため、コードのデフォルト値を使う
+const HERMES_API = process.env.HERMES_API_URL || 'http://127.0.0.1:8642'
+const HERMES_API_KEY = process.env.HERMES_API_KEY || 'change-me-local-dev'
+const AUTH_HEADERS = {
+  'Authorization': `Bearer ${HERMES_API_KEY}`,
+  'Content-Type': 'application/json',
+}
+
 const app = new Hono()
 
-// ── セッション状態 ──
-let currentSessionId = ''
+// ── アクティブなストリーム管理（キャンセル用） ──
+const activeStreams = new Map<string, AbortController>()
 
 // ═══════════════════════════════════════════
 // JSON API — `/api/` 配下はすべて JSON 応答
 // ═══════════════════════════════════════════
 
-// ── Hermes AI チャット ──
-app.post('/api/hermes/chat/new', async (c) => {
+// ── Hermes チャット（Sessions API /chat/stream SSE）──
+app.post('/api/hermes/chat/stream', async (c) => {
   try {
-    const { prompt } = await c.req.json()
-    if (!prompt) return c.json({ ok: false, error: 'No prompt' })
-    currentSessionId = ''  // 明示的に新規セッション
-    const { response, sessionId } = await askHermes(prompt, '')
-    currentSessionId = sessionId || ''
-    return c.json({ ok: true, response, session_active: true })
+    const { message, session_id } = await c.req.json()
+    if (!message) return c.json({ ok: false, error: 'No message' }, 400)
+
+    // 1. セッション作成（なければ）
+    let sid = session_id
+    if (!sid) {
+      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
+        method: 'POST', headers: AUTH_HEADERS, body: '{}',
+      })
+      if (!sessRes.ok) {
+        return c.json({ ok: false, error: `Session creation failed (${sessRes.status})` }, 502)
+      }
+      const sess = await sessRes.json()
+      sid = sess.session?.id
+      if (!sid) return c.json({ ok: false, error: 'No session_id in response' }, 502)
+    }
+
+    // 2. AbortController 準備
+    const streamId = `s-${sid}`
+    const abortCtl = new AbortController()
+    activeStreams.set(streamId, abortCtl)
+
+    // 3. Sessions API SSE に接続
+    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
+      method: 'POST',
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ message }),
+      signal: abortCtl.signal,
+    })
+    if (!apiRes.ok || !apiRes.body) {
+      activeStreams.delete(streamId)
+      const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
+      console.error('[stream] Sessions API error:', apiRes.status, err)
+      return c.json({ ok: false, error: `Sessions API error (${apiRes.status})` }, 502)
+    }
+
+    // 4. SSE をそのままクライアントにパイプ
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      start(controller) {
+        const reader = apiRes.body!.getReader()
+        function pump(): Promise<void> {
+          return reader.read().then(({ done, value }) => {
+            if (done) { controller.close(); return }
+            controller.enqueue(value)
+            return pump()
+          }).catch((err) => {
+            if (err.name === 'AbortError') { controller.close(); return }
+            console.error('[stream] pipe error:', err)
+            controller.close()
+          })
+        }
+        pump().finally(() => activeStreams.delete(streamId))
+      },
+      cancel() {
+        abortCtl.abort()
+        activeStreams.delete(streamId)
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+      },
+    })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[api/hermes/chat/new] Error:', msg)
-    return c.json({ ok: false, error: msg })
+    console.error('[api/hermes/chat/stream] Error:', msg)
+    return c.json({ ok: false, error: msg }, 500)
   }
 })
 
-app.post('/api/hermes/chat/continue', async (c) => {
+// ── ストリームをキャンセル（POST /v1/runs/{run_id}/stop） ──
+app.post('/api/hermes/chat/stop', async (c) => {
   try {
-    const { prompt } = await c.req.json()
-    if (!prompt) return c.json({ ok: false, error: 'No prompt' })
-    if (!currentSessionId) return c.json({ ok: false, error: 'No active session' })
-    const { response, sessionId } = await askHermes(prompt, currentSessionId)
-    currentSessionId = sessionId || currentSessionId
-    return c.json({ ok: true, response, session_active: true })
+    const { run_id } = await c.req.json()
+    if (!run_id) return c.json({ ok: false, error: 'No run_id' }, 400)
+
+    // ローカルの AbortController で fetch 中断
+    // （run_id から streamId を逆引きできないので全探索）
+    for (const [id, ctl] of activeStreams) {
+      if (id.endsWith(run_id) || id === run_id) { ctl.abort(); activeStreams.delete(id); break }
+    }
+
+    // Hermes API Server にキャンセル通知
+    const res = await fetch(`${HERMES_API}/v1/runs/${run_id}/stop`, {
+      method: 'POST', headers: { 'Authorization': `Bearer ${HERMES_API_KEY}` },
+    })
+    if (!res.ok && res.status !== 404) {
+      return c.json({ ok: false, error: `Stop failed (${res.status})` }, 502)
+    }
+    return c.json({ ok: true, run_id })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[api/hermes/chat/continue] Error:', msg)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── 書式なし同期チャット（互換性維持） ──
+app.post('/api/hermes/chat/new', async (c) => {
+  try {
+    const { prompt, session_id } = await c.req.json()
+    if (!prompt) return c.json({ ok: false, error: 'No prompt' })
+
+    // セッション作成 or 継続
+    let sid = session_id
+    if (!sid) {
+      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
+        method: 'POST', headers: AUTH_HEADERS, body: '{}',
+      })
+      if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
+      const sess = await sessRes.json()
+      sid = sess.session?.id
+    }
+
+    const res = await fetch(`${HERMES_API}/api/sessions/${sid}/chat`, {
+      method: 'POST', headers: AUTH_HEADERS,
+      body: JSON.stringify({ message: prompt }),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      return c.json({ ok: false, error: `API ${res.status}: ${err.slice(0, 200)}` }, 502)
+    }
+    const data = await res.json()
+    return c.json({
+      ok: true,
+      response: data.message?.content || '(empty)',
+      session_id: sid,
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
     return c.json({ ok: false, error: msg })
   }
 })
@@ -89,33 +206,8 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-// ── Hermes CLI 呼び出し ──
-async function askHermes(prompt: string, sessionId: string): Promise<{ response: string; sessionId: string }> {
-  const args = ['chat', '-q', prompt, '--quiet']
-  if (sessionId) args.push('--resume', sessionId)
-
-  const proc = spawn('hermes', args, {
-    env: { ...process.env, HOME: process.env.HOME || '/home/appuser' },
-    timeout: 120_000,
-  })
-
-  const [stdout, stderr] = await Promise.all([
-    new Promise<string>((resolve) => { let d = ''; proc.stdout!.on('data', (c: Buffer) => d += c); proc.stdout!.on('end', () => resolve(d)) }),
-    new Promise<string>((resolve) => { let d = ''; proc.stderr!.on('data', (c: Buffer) => d += c); proc.stderr!.on('end', () => resolve(d)) }),
-  ])
-  const exitCode = await new Promise<number>((resolve) => proc.on('close', resolve))
-
-  if (exitCode !== 0) {
-    throw new Error(`hermes exited ${exitCode}: ${(stderr || stdout).trim()}`)
-  }
-
-  let extractedSessionId = sessionId
-  for (const line of stderr.split('\n')) {
-    const t = line.trim()
-    if (t.startsWith('session_id:')) extractedSessionId = t.replace(/^session_id:\s*/, '').trim()
-  }
-  return { response: stdout.trim(), sessionId: extractedSessionId }
-}
-
 serve({ port: PORT, fetch: app.fetch })
 console.log(`[html-api] Running on http://localhost:${PORT}`)
+console.log(`[html-api] Hermes API: ${HERMES_API}`)
+console.log(`[html-api] Session + SSE: ✅ /api/hermes/chat/stream (送信 body: { message, session_id? })`)
+console.log(`[html-api] Cancel (run_id): ✅ /api/hermes/chat/stop (送信 body: { run_id })`)
