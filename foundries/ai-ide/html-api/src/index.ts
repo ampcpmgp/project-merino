@@ -14,25 +14,34 @@ let currentSessionId = ''
 // ═══════════════════════════════════════════
 
 // ── Hermes AI チャット ──
-app.post('/api/hermes/chat', async (c) => {
+app.post('/api/hermes/chat/new', async (c) => {
   try {
     const { prompt } = await c.req.json()
     if (!prompt) return c.json({ ok: false, error: 'No prompt' })
-    const { response, sessionId } = await askHermes(prompt, currentSessionId)
-    const hadSession = !!currentSessionId
-    currentSessionId = sessionId || currentSessionId
-    return c.json({ ok: true, response, session_active: !hadSession || !!currentSessionId })
+    currentSessionId = ''  // 明示的に新規セッション
+    const { response, sessionId } = await askHermes(prompt, '')
+    currentSessionId = sessionId || ''
+    return c.json({ ok: true, response, session_active: true })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[api/hermes/chat] Error:', msg)
+    console.error('[api/hermes/chat/new] Error:', msg)
     return c.json({ ok: false, error: msg })
   }
 })
 
-// ── 新規会話 ──
-app.post('/api/hermes/new', async (c) => {
-  currentSessionId = ''
-  return c.json({ ok: true, session_active: false })
+app.post('/api/hermes/chat/continue', async (c) => {
+  try {
+    const { prompt } = await c.req.json()
+    if (!prompt) return c.json({ ok: false, error: 'No prompt' })
+    if (!currentSessionId) return c.json({ ok: false, error: 'No active session' })
+    const { response, sessionId } = await askHermes(prompt, currentSessionId)
+    currentSessionId = sessionId || currentSessionId
+    return c.json({ ok: true, response, session_active: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[api/hermes/chat/continue] Error:', msg)
+    return c.json({ ok: false, error: msg })
+  }
 })
 
 // ── カスタムスクリプト実行 ──
