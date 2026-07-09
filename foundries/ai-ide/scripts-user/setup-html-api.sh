@@ -20,7 +20,7 @@ if [ ! -d "${HTML_APP_DST}/scripts" ]; then
     echo "[setup-html-api] Created scripts directory"
 fi
 
-# htmx-data ディレクトリ
+# html-data ディレクトリ
 if [ ! -d "/workspace/private/html-data" ]; then
     mkdir -p "/workspace/private/html-data"
 fi

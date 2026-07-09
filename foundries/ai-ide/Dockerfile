@@ -171,7 +171,7 @@ RUN bun install
 WORKDIR /home/appuser/app
 # Fix whiteboard permissions for runtime user (appuser)
 RUN chown -R appuser:appuser /home/appuser/app/whiteboard
-# Fix htmx-app permissions
+# Fix html-api permissions
 RUN chown -R appuser:appuser /home/appuser/app/html-api
 
 # Fix home directory permissions so nginx (www-data) can read whiteboard static files
