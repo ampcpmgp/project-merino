@@ -3,12 +3,12 @@ import { serve } from 'bun'
 
 const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
 
-// Hermes API Server (port 8642) — Sessions API (セッション管理 + SSE)
-// APIキーは supervisor environment から渡す。なければエラーになる
-const HERMES_API = process.env.HERMES_API_URL || 'http://127.0.0.1:8642'
+// Hermes API Server (同一コンテナ内 localhost:8642)
+// AIキーは Docker .env の HERMES_API_KEY から継承される
+const HERMES_API = 'http://127.0.0.1:8642'
 const HERMES_API_KEY = process.env.HERMES_API_KEY
 if (!HERMES_API_KEY) {
-  console.error('[FATAL] HERMES_API_KEY is not set. Set it in supervisor environment or .env')
+  console.error('[FATAL] HERMES_API_KEY is not set. Add it to Docker .env or supervisor environment.')
   process.exit(1)
 }
 const AUTH_HEADERS = {
