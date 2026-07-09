@@ -75,9 +75,9 @@ app.post('/api/hermes/chat/stream', async (c) => {
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
-            if (err.name === 'AbortError') { controller.close(); return }
+            if (err.name === 'AbortError') { return } // cancel が既に controller を閉じてる
             console.error('[stream] pipe error:', err)
-            controller.close()
+            try { controller.close() } catch {}       // 二重 close を握りつぶす
           })
         }
         pump().finally(() => activeStreams.delete(streamId))
