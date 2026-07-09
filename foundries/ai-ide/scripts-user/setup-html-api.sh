@@ -1,24 +1,22 @@
 #!/usr/bin/env bash
-# setup-html-api.sh — /workspace への html-api 初回seed（最小構成）
+# setup-html-api.sh — html-api を /workspace へ seed / 更新（冪等・再実行可能）
 set -euo pipefail
 
 echo "[setup-html-api] Starting..."
 
-HTMX_APP_SRC="/home/appuser/app/html-api"
-HTMX_APP_DST="/workspace/private/html-api"
+HTML_APP_SRC="/home/appuser/app/html-api"
+HTML_APP_DST="/workspace/private/html-api"
 
-echo "[setup-html-api] htmx-app 本体を初回のみ /workspace に seed"
-if [ ! -d "$HTMX_APP_DST" ]; then
-    echo "[setup-html-api] First boot — seeding html-api to /workspace..."
-    cp -r "$HTMX_APP_SRC" "$HTMX_APP_DST"
-    echo "[setup-html-api] ✅ html-api seeded to ${HTMX_APP_DST}"
-else
-    echo "[setup-html-api] html-api already exists in /workspace — skipping seed"
-fi
+# rsync で差分コピー（ソース側の変更のみ反映、ユーザーデータは除外）
+echo "[setup-html-api] Syncing html-api to /workspace..."
+rsync -a --info=PROGRESS2 \
+  --exclude='/user_state/' \
+  "$HTML_APP_SRC/" "$HTML_APP_DST/"
+echo "[setup-html-api] ✅ html-api synced to ${HTML_APP_DST}"
 
-# スクリプトディレクトリ（なければ作成）
-if [ ! -d "${HTMX_APP_DST}/scripts" ]; then
-    mkdir -p "${HTMX_APP_DST}/scripts"
+# スクリプトディレクトリ（なければ作成、既存ユーザースクリプトは保持）
+if [ ! -d "${HTML_APP_DST}/scripts" ]; then
+    mkdir -p "${HTML_APP_DST}/scripts"
     echo "[setup-html-api] Created scripts directory"
 fi
 
