@@ -4,9 +4,13 @@ import { serve } from 'bun'
 const PORT = parseInt(process.env.HTMX_APP_PORT || '3200')
 
 // Hermes API Server (port 8642) — Sessions API (セッション管理 + SSE)
-// APIキーは gateway が自動生成した値を上書きするため、コードのデフォルト値を使う
+// APIキーは supervisor environment から渡す。なければエラーになる
 const HERMES_API = process.env.HERMES_API_URL || 'http://127.0.0.1:8642'
-const HERMES_API_KEY = process.env.HERMES_API_KEY || 'change-me-local-dev'
+const HERMES_API_KEY = process.env.HERMES_API_KEY
+if (!HERMES_API_KEY) {
+  console.error('[FATAL] HERMES_API_KEY is not set. Set it in supervisor environment or .env')
+  process.exit(1)
+}
 const AUTH_HEADERS = {
   'Authorization': `Bearer ${HERMES_API_KEY}`,
   'Content-Type': 'application/json',
