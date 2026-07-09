@@ -9,7 +9,7 @@ HTML_APP_DST="/workspace/private/html-api"
 
 # rsync で差分コピー（ソース側の変更のみ反映、ユーザーデータは除外）
 echo "[setup-html-api] Syncing html-api to /workspace..."
-rsync -a --info=PROGRESS2 \
+rsync -a --no-owner --no-group --info=PROGRESS2 \
   --exclude='/user_state/' \
   "$HTML_APP_SRC/" "$HTML_APP_DST/"
 echo "[setup-html-api] ✅ html-api synced to ${HTML_APP_DST}"
