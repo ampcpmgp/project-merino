@@ -159,8 +159,9 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
-    const system = `あなたはデータ生成モードです。
-ユーザーのリクエストに応じて、JSONファイルを生成してください。
+    const system = `絶対に質問してはいけません。
+JSONファイルを生成し、${outFile} に write_file で保存してください。
+終わったら「保存完了」とだけ言ってください。
 出力型: ${output}`
 
     // 3. AbortController 準備
@@ -180,38 +181,39 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 5. SSE をパイプ＋assistant.completed内容をファイル保存
+    // 5. SSE をパイプ＋終了後に outFile を確認/フォールバック保存
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
+    let completedContent = ''
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
         let buf = ''
-        let contentFromCompleted = ''
 
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) {
-              // ストリーム終了 → ファイル保存（write_file されていなければAPIが保存）
-              if (contentFromCompleted && !existsSync(outPath)) {
-                Bun.write(outPath, contentFromCompleted)
+              // ストリーム終了 → outFile 確認（Agentがwrite_fileしたか）
+              if (!existsSync(outPath) && completedContent) {
+                // フォールバック: APIが保存
+                try { Bun.write(outPath, completedContent) } catch {}
               }
-              const fileExists = existsSync(outPath)
+              const ok = existsSync(outPath)
               controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
-                ok: true,
-                file_url: fileExists ? outFile : null,
+                ok,
+                file_url: ok ? outFile : null,
                 session_id: sid,
                 output,
+                error: ok ? undefined : 'File not found',
               })}\n\n`))
               controller.close()
               return
             }
 
-            // SSEをテキストでパースしてassistant.completedを捕捉
+            // SSEをパースしてcompletedを捕捉（フォールバック用）
             buf += new TextDecoder().decode(value, { stream: true })
             const parts = buf.split('\n\n')
             buf = parts.pop() || ''
-
             for (const part of parts) {
               const lines = part.split('\n')
               let ev = '', data = ''
@@ -220,7 +222,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
                 else if (l.startsWith('data: ')) data = l.slice(6)
               }
               if (ev === 'assistant.completed' && data) {
-                try { contentFromCompleted = JSON.parse(data).content || '' } catch {}
+                try { completedContent = JSON.parse(data).content || '' } catch {}
               }
               controller.enqueue(e(part + '\n\n'))
             }
