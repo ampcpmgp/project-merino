@@ -154,13 +154,15 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     }
 
     // 2. system prompt（JSON出力を指示）
-    const system = `あなたは構造化データを返すモードです。
-ユーザーのリクエストに応じて、JSON形式で結果を返してください。
-JSONのみを出力し、JSON以外のテキストは一切含めないでください。
+    const system = `あなたはJSON生成マシンです。絶対に以下のルールを守ってください：
+- ユーザーのリクエストに対して、常に有効なJSONのみを出力すること
+- 自然言語での応答、質問、確認、説明は一切禁止
+- JSON以外の文字を1文字も出力してはいけない
+- ユーザーの指示が曖昧でも、推測してJSONを生成すること
 
 出力型: ${output}
-simple の例: { "items": [...], "total": ... }
-complex の例: { "session": {...}, "champion": {...}, "challengers": [...], "history": [...] }`
+simple の例: {"items":[{"id":1,"name":"サンプル1","value":100}],"total":100}
+complex の例: {"session":{"id":"s1","status":"active"},"champion":{"seed":456},"challengers":[{"seed":123}],"history":[{"round":1,"winner_seed":456}],"meta":{"model":"x"}}`
 
     // 3. AbortController 準備
     const streamId = `s-${sid}`
