@@ -249,6 +249,70 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
   }
 })
 
+// ── 同期JSONチャット ──
+app.post('/api/hermes/chat/sync-json', async (c) => {
+  try {
+    const { message, session_id, output } = await c.req.json()
+    if (!message) return c.json({ ok: false, error: 'No message' }, 400)
+
+    // 1. セッション作成（なければ）
+    let sid = session_id
+    if (!sid) {
+      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
+        method: 'POST', headers: AUTH_HEADERS, body: '{}',
+      })
+      if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
+      const sess = await sessRes.json()
+      sid = sess.session?.id
+      if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
+    }
+
+    // 2. system prompt 生成
+    const system = output
+      ? `あなたは構造化データを返すモードです。
+以下のルールに従ってください：
+1. ユーザーのリクエストを処理し、結果をJSON形式で返してください
+2. JSON以外のテキストは一切出力しないでください
+3. 出力するJSONは解析可能な完全な形式にしてください
+
+出力型: ${output}`
+      : undefined
+
+    // 3. Sessions API 同期呼び出し
+    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat`, {
+      method: 'POST', headers: AUTH_HEADERS,
+      body: JSON.stringify({ message, system }),
+    })
+    if (!apiRes.ok) {
+      const err = await apiRes.text()
+      return c.json({ ok: false, error: `API ${apiRes.status}: ${err.slice(0, 200)}` }, 502)
+    }
+    const data = await apiRes.json()
+    const content = data.message?.content || ''
+    const trimmed = content.trim()
+
+    // 4. JSON パースを試みる
+    // Agent が JSON のみを返した場合 → data にパースして格納
+    // Agent がテキストを返した場合 → raw に元の応答を格納
+    let parsed: object | null = null
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      // JSON ではない → そのまま raw として返す
+    }
+
+    return c.json({
+      ok: true,
+      data: parsed,
+      raw: parsed ? undefined : trimmed,
+      session_id: sid,
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
 // ── カスタムスクリプト実行 ──
 app.post('/api/exec/:name', async (c) => {
   const name = c.req.param('name')
