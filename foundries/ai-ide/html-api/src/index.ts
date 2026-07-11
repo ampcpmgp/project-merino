@@ -201,6 +201,84 @@ app.get('/api/read', async (c) => {
 // ── Ping ──
 app.get('/api/ping', (c) => c.json({ ok: true }))
 
+// ── JSON SSE: シンプル ──
+app.get('/api/json-stream/simple', async (c) => {
+  const data = {
+    images: [
+      { url: 'https://fal.media/files/demo1.png', seed: 101, cost: 0.04 },
+      { url: 'https://fal.media/files/demo2.png', seed: 102, cost: 0.04 },
+    ],
+    total_cost: 0.08,
+    model: 'seedream-v4.5',
+  }
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(
+        `event: data\ndata: ${JSON.stringify(data)}\n\n`
+      ))
+      controller.close()
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    },
+  })
+})
+
+// ── JSON SSE: 複雑 ──
+app.get('/api/json-stream/complex', async (c) => {
+  const data = {
+    session: { id: 'sess_demo_001', round: 3, status: 'champion_decided' },
+    champion: {
+      seed: 456,
+      url: 'https://fal.media/files/champ.png',
+      cost: 0.0675,
+      prompt: '赤いドレスの女性、海辺、夕日、フォトリアル',
+      upscaled: true,
+      dimensions: { w: 2048, h: 2048 },
+    },
+    challengers: [
+      { seed: 123, url: 'https://fal.media/files/c1.png', cost: 0.0675 },
+      { seed: 789, url: 'https://fal.media/files/c2.png', cost: 0.0675 },
+    ],
+    history: [
+      { round: 1, winner_seed: 456, feedback: '' },
+      { round: 2, winner_seed: 456, feedback: 'もっと明るく' },
+    ],
+    meta: {
+      model: 'seedream-v5-pro',
+      total_cost: 0.27,
+      elapsed_ms: 8432,
+      created_at: new Date().toISOString(),
+    },
+  }
+
+  // Hono v4 で new Response(ReadableStream) がエラーになるバグ対応
+  // Bun + Hono で ReadableStream を直接 Response に渡すと Internal Server Error
+  // → SSE ヘッダー + JSON 文字列を直接 enqueue して Response を返す
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(
+        `event: data\ndata: ${JSON.stringify(data)}\n\n`
+      ))
+      controller.close()
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    },
+  })
+})
+
 // ── CORS ──
 app.use('*', async (c, next) => {
   c.res.headers.set('Access-Control-Allow-Origin', '*')
