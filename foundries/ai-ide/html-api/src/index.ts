@@ -153,13 +153,10 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. system prompt（JSON出力を指示）
-    const system = `あなたはJSON生成マシンです。絶対に以下のルールを守ってください：
-- ユーザーのリクエストに対して、常に有効なJSONのみを出力すること
-- 自然言語での応答、質問、確認、説明は一切禁止
-- JSON以外の文字を1文字も出力してはいけない
-- ユーザーの指示が曖昧でも、推測してJSONを生成すること
-
+    // 2. system prompt（JSON出力を促す）
+    const system = `あなたはデータ生成モードです。
+ユーザーのメッセージに応じて、適切な JSON データを生成し、マークダウンのコードブロックで囲んで出力してください。
+必ずJSONを出力すること。JSONの前に簡単な説明を1行入れても構いません。
 出力型: ${output}`
 
     // 3. AbortController 準備
@@ -179,51 +176,14 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 5. SSE をパイプ＋JSON検証
-    const enc = new TextEncoder()
-    const e = (s: string) => enc.encode(s)
+    // 5. SSE をそのままパイプ
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
-        let buf = ''
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
-            if (done) {
-              controller.close()
-              return
-            }
-            // チャンクをテキストに変換してバッファ
-            buf += new TextDecoder().decode(value, { stream: true })
-            const parts = buf.split('\n\n')
-            buf = parts.pop() || ''
-
-            for (const part of parts) {
-              const lines = part.split('\n')
-              let ev = '', data = ''
-              for (const l of lines) {
-                if (l.startsWith('event: ')) ev = l.slice(7).trim()
-                else if (l.startsWith('data: ')) data = l.slice(6)
-              }
-
-              if (ev === 'assistant.completed' && data) {
-                try {
-                  const p = JSON.parse(data)
-                  const content = (p.content || '').trim()
-                  if (content && !content.startsWith('{') && !content.startsWith('[')) {
-                    // JSONじゃない → errorイベントを注入
-                    controller.enqueue(e(part + '\n\n'))
-                    controller.enqueue(e(`event: error\ndata: ${JSON.stringify({
-                      error: 'Agent did not return JSON',
-                      detail: 'Response is natural language text, not JSON. Expected a JSON object or array.',
-                      output_type: output,
-                    })}\n\n`))
-                    continue
-                  }
-                } catch { /* parse error in event JSON itself — pass through */ }
-              }
-
-              controller.enqueue(e(part + '\n\n'))
-            }
+            if (done) { controller.close(); return }
+            controller.enqueue(value)
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
