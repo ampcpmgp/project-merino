@@ -134,12 +134,12 @@ app.post('/api/hermes/chat/stop', async (c) => {
   }
 })
 
-// ── Hermes チャット JSON SSE（テキスト→パース→ファイル保存）──
+// ── Hermes JSON SSE（stream + system prompt）──
 app.post('/api/hermes/chat/stream-json', async (c) => {
   try {
     const { message, session_id, output } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
-    if (!output) return c.json({ ok: false, error: 'output is required (e.g. "images", "dialogs")' }, 400)
+    if (!output) return c.json({ ok: false, error: 'output required: "simple" or "complex"' }, 400)
 
     // 1. セッション作成
     let sid = session_id
@@ -153,28 +153,23 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. 出力ファイルパス
-    const ts = Date.now()
-    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
-    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
-    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
-
-    // 3. system prompt（ファイル書き出し指示）
+    // 2. system prompt（JSON出力を指示）
     const system = `あなたは構造化データを返すモードです。
-ユーザーのリクエストを処理し、結果を ${outFile} に write_file で保存してください。
-JSON.stringify() を使って正しいJSON形式で保存してください。
+ユーザーのリクエストに応じて、JSON形式で結果を返してください。
+JSONのみを出力し、JSON以外のテキストは一切含めないでください。
 
-出力型: ${output}`
+出力型: ${output}
+simple の例: { "items": [...], "total": ... }
+complex の例: { "session": {...}, "champion": {...}, "challengers": [...], "history": [...] }`
 
-    // 4. AbortController 準備
+    // 3. AbortController 準備
     const streamId = `s-${sid}`
     const abortCtl = new AbortController()
     activeStreams.set(streamId, abortCtl)
 
-    // 5. Sessions API SSE に接続
+    // 4. Hermes API に接続（stream + system）
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
-      method: 'POST',
-      headers: AUTH_HEADERS,
+      method: 'POST', headers: AUTH_HEADERS,
       body: JSON.stringify({ message, system }),
       signal: abortCtl.signal,
     })
@@ -184,51 +179,32 @@ JSON.stringify() を使って正しいJSON形式で保存してください。
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 6. SSE をパイプ＋終了時に file_url を inject
+    // 5. SSE をそのままパイプ（加工なし）
     const enc = new TextEncoder()
+    const e = (s: string) => enc.encode(s)
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
-            if (done) {
-              // ストリーム終了 → ファイル存在確認して result イベントを inject
-              const exists = existsSync(outPath)
-              controller.enqueue(enc(`event: result\ndata: ${JSON.stringify({
-                ok: exists,
-                file_url: exists ? outFile : null,
-                error: exists ? undefined : 'Agent did not write output file',
-              })}\n\n`))
-              controller.close()
-              return
-            }
+            if (done) { controller.close(); return }
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
-            console.error('[stream-json] pipe error:', err)
-            controller.enqueue(enc(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`))
             controller.close()
           })
         }
         pump().finally(() => activeStreams.delete(streamId))
       },
-      cancel() {
-        abortCtl.abort()
-        activeStreams.delete(streamId)
-      },
+      cancel() { abortCtl.abort(); activeStreams.delete(streamId) },
     })
 
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no',
-      },
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
     })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error('[api/hermes/chat/stream-json] Error:', msg)
     return c.json({ ok: false, error: msg }, 500)
   }
 })
