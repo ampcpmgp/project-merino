@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
+import { mkdirSync, existsSync } from 'fs'
+import { join } from 'path'
 
 const PORT = 3200
 
@@ -17,6 +19,10 @@ const AUTH_HEADERS = {
 }
 
 const app = new Hono()
+
+// ── Pipeline 出力ディレクトリ ──
+const PIPELINE_DIR = '/tmp/pipeline'
+mkdirSync(PIPELINE_DIR, { recursive: true })
 
 // ── アクティブなストリーム管理（キャンセル用） ──
 const activeStreams = new Map<string, AbortController>()
@@ -165,13 +171,14 @@ app.post('/api/hermes/chat/sync', async (c) => {
   }
 })
 
-// ── Hermes チャット JSON SSE ──
+// ── Hermes チャット JSON SSE（ファイル書き出し方式）──
 app.post('/api/hermes/chat/stream-json', async (c) => {
   try {
     const { message, session_id, output } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
+    if (!output) return c.json({ ok: false, error: 'output is required (e.g. "images", "dialogs")' }, 400)
 
-    // 1. セッション作成（なければ）
+    // 1. セッション作成
     let sid = session_id
     if (!sid) {
       const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
@@ -183,23 +190,25 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. AbortController 準備
+    // 2. 出力ファイルパス
+    const ts = Date.now()
+    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
+    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
+    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
+
+    // 3. system prompt（ファイル書き出し指示）
+    const system = `あなたは構造化データを返すモードです。
+ユーザーのリクエストを処理し、結果を ${outFile} に write_file で保存してください。
+JSON.stringify() を使って正しいJSON形式で保存してください。
+
+出力型: ${output}`
+
+    // 4. AbortController 準備
     const streamId = `s-${sid}`
     const abortCtl = new AbortController()
     activeStreams.set(streamId, abortCtl)
 
-    // 3. system prompt 生成（output 指定があればJSONモード）
-    const system = output
-      ? `あなたは構造化データを返すモードです。
-以下のルールに従ってください：
-1. ユーザーのリクエストを処理し、結果をJSON形式で返してください
-2. JSON以外のテキストは一切出力しないでください
-3. 出力するJSONは解析可能な完全な形式にしてください
-
-出力型: ${output}`
-      : undefined
-
-    // 4. Sessions API SSE に接続（system 付き）
+    // 5. Sessions API SSE に接続
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
       method: 'POST',
       headers: AUTH_HEADERS,
@@ -212,18 +221,30 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 5. SSE をパイプ（そのままクライアントに）
+    // 6. SSE をパイプ＋終了時に file_url を inject
+    const enc = new TextEncoder()
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
-            if (done) { controller.close(); return }
+            if (done) {
+              // ストリーム終了 → ファイル存在確認して result イベントを inject
+              const exists = existsSync(outPath)
+              controller.enqueue(enc(`event: result\ndata: ${JSON.stringify({
+                ok: exists,
+                file_url: exists ? outFile : null,
+                error: exists ? undefined : 'Agent did not write output file',
+              })}\n\n`))
+              controller.close()
+              return
+            }
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
             console.error('[stream-json] pipe error:', err)
+            controller.enqueue(enc(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`))
             controller.close()
           })
         }
@@ -249,13 +270,14 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
   }
 })
 
-// ── 同期JSONチャット ──
+// ── 同期JSONチャット（テキスト→パース→ファイル保存）──
 app.post('/api/hermes/chat/sync-json', async (c) => {
   try {
     const { message, session_id, output } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
+    if (!output) return c.json({ ok: false, error: 'output is required (e.g. "images", "dialogs")' }, 400)
 
-    // 1. セッション作成（なければ）
+    // 1. セッション作成
     let sid = session_id
     if (!sid) {
       const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
@@ -267,18 +289,21 @@ app.post('/api/hermes/chat/sync-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. system prompt 生成
-    const system = output
-      ? `あなたは構造化データを返すモードです。
-以下のルールに従ってください：
-1. ユーザーのリクエストを処理し、結果をJSON形式で返してください
-2. JSON以外のテキストは一切出力しないでください
-3. 出力するJSONは解析可能な完全な形式にしてください
+    // 2. 出力ファイルパス（パース成功時のみ使う）
+    const ts = Date.now()
+    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
+    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
+    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
+
+    // 3. system prompt（JSON形式で返すよう指示）
+    const system = `あなたは構造化データを返すモードです。
+ユーザーのリクエストを処理し、以下のJSON形式で結果を返してください。
+JSON以外のテキストは一切含めず、JSONのみを出力してください。
+JSONは必ずJSON.parse()で解析可能な完全な形式にしてください。
 
 出力型: ${output}`
-      : undefined
 
-    // 3. Sessions API 同期呼び出し
+    // 4. Sessions API 同期呼び出し
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat`, {
       method: 'POST', headers: AUTH_HEADERS,
       body: JSON.stringify({ message, system }),
@@ -288,25 +313,34 @@ app.post('/api/hermes/chat/sync-json', async (c) => {
       return c.json({ ok: false, error: `API ${apiRes.status}: ${err.slice(0, 200)}` }, 502)
     }
     const data = await apiRes.json()
-    const content = data.message?.content || ''
-    const trimmed = content.trim()
+    const content = (data.message?.content || '').trim()
 
-    // 4. JSON パースを試みる
-    // Agent が JSON のみを返した場合 → data にパースして格納
-    // Agent がテキストを返した場合 → raw に元の応答を格納
-    let parsed: object | null = null
+    // 5. JSON 抽出・パース
+    // マークダウンコードブロック ```json ... ``` も処理
+    let jsonStr = content
+    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim()
+
     try {
-      parsed = JSON.parse(trimmed)
+      const parsed = JSON.parse(jsonStr)
+      // パース成功 → ファイル保存 + レスポンス
+      Bun.write(outPath, JSON.stringify(parsed, null, 2))
+      return c.json({
+        ok: true,
+        data: parsed,
+        file_url: outFile,
+        session_id: sid,
+      })
     } catch {
-      // JSON ではない → そのまま raw として返す
+      // パース失敗 → raw で生テキストを返す
+      return c.json({
+        ok: true,
+        data: null,
+        raw: content,
+        session_id: sid,
+        note: 'Agent did not return valid JSON. Check raw field.',
+      })
     }
-
-    return c.json({
-      ok: true,
-      data: parsed,
-      raw: parsed ? undefined : trimmed,
-      session_id: sid,
-    })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     return c.json({ ok: false, error: msg }, 500)
