@@ -134,44 +134,7 @@ app.post('/api/hermes/chat/stop', async (c) => {
   }
 })
 
-// ── 書式なし同期チャット ──
-app.post('/api/hermes/chat/sync', async (c) => {
-  try {
-    const { prompt, session_id } = await c.req.json()
-    if (!prompt) return c.json({ ok: false, error: 'No prompt' })
-
-    // セッション作成 or 継続
-    let sid = session_id
-    if (!sid) {
-      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
-        method: 'POST', headers: AUTH_HEADERS, body: '{}',
-      })
-      if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
-      const sess = await sessRes.json()
-      sid = sess.session?.id
-    }
-
-    const res = await fetch(`${HERMES_API}/api/sessions/${sid}/chat`, {
-      method: 'POST', headers: AUTH_HEADERS,
-      body: JSON.stringify({ message: prompt }),
-    })
-    if (!res.ok) {
-      const err = await res.text()
-      return c.json({ ok: false, error: `API ${res.status}: ${err.slice(0, 200)}` }, 502)
-    }
-    const data = await res.json()
-    return c.json({
-      ok: true,
-      response: data.message?.content || '(empty)',
-      session_id: sid,
-    })
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return c.json({ ok: false, error: msg })
-  }
-})
-
-// ── Hermes チャット JSON SSE（ファイル書き出し方式）──
+// ── Hermes チャット JSON SSE（テキスト→パース→ファイル保存）──
 app.post('/api/hermes/chat/stream-json', async (c) => {
   try {
     const { message, session_id, output } = await c.req.json()
@@ -270,83 +233,6 @@ JSON.stringify() を使って正しいJSON形式で保存してください。
   }
 })
 
-// ── 同期JSONチャット（テキスト→パース→ファイル保存）──
-app.post('/api/hermes/chat/sync-json', async (c) => {
-  try {
-    const { message, session_id, output } = await c.req.json()
-    if (!message) return c.json({ ok: false, error: 'No message' }, 400)
-    if (!output) return c.json({ ok: false, error: 'output is required (e.g. "images", "dialogs")' }, 400)
-
-    // 1. セッション作成
-    let sid = session_id
-    if (!sid) {
-      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
-        method: 'POST', headers: AUTH_HEADERS, body: '{}',
-      })
-      if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
-      const sess = await sessRes.json()
-      sid = sess.session?.id
-      if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
-    }
-
-    // 2. 出力ファイルパス（パース成功時のみ使う）
-    const ts = Date.now()
-    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
-    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
-    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
-
-    // 3. system prompt（JSON形式で返すよう指示）
-    const system = `あなたは構造化データを返すモードです。
-ユーザーのリクエストを処理し、以下のJSON形式で結果を返してください。
-JSON以外のテキストは一切含めず、JSONのみを出力してください。
-JSONは必ずJSON.parse()で解析可能な完全な形式にしてください。
-
-出力型: ${output}`
-
-    // 4. Sessions API 同期呼び出し
-    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat`, {
-      method: 'POST', headers: AUTH_HEADERS,
-      body: JSON.stringify({ message, system }),
-    })
-    if (!apiRes.ok) {
-      const err = await apiRes.text()
-      return c.json({ ok: false, error: `API ${apiRes.status}: ${err.slice(0, 200)}` }, 502)
-    }
-    const data = await apiRes.json()
-    const content = (data.message?.content || '').trim()
-
-    // 5. JSON 抽出・パース
-    // マークダウンコードブロック ```json ... ``` も処理
-    let jsonStr = content
-    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-    if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim()
-
-    try {
-      const parsed = JSON.parse(jsonStr)
-      // パース成功 → ファイル保存 + レスポンス
-      Bun.write(outPath, JSON.stringify(parsed, null, 2))
-      return c.json({
-        ok: true,
-        data: parsed,
-        file_url: outFile,
-        session_id: sid,
-      })
-    } catch {
-      // パース失敗 → raw で生テキストを返す
-      return c.json({
-        ok: true,
-        data: null,
-        raw: content,
-        session_id: sid,
-        note: 'Agent did not return valid JSON. Check raw field.',
-      })
-    }
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return c.json({ ok: false, error: msg }, 500)
-  }
-})
-
 // ── カスタムスクリプト実行 ──
 app.post('/api/exec/:name', async (c) => {
   const name = c.req.param('name')
@@ -395,7 +281,6 @@ app.use('*', async (c, next) => {
 serve({ port: PORT, fetch: app.fetch })
 console.log(`[html-api] Running on http://localhost:${PORT}`)
 console.log(`[html-api] Hermes API: ${HERMES_API}`)
-console.log(`[html-api] Sync:  ✅ POST /api/hermes/chat/sync`)
-console.log(`[html-api] Stream:   ✅ POST /api/hermes/chat/stream`)
-console.log(`[html-api] JSON SSE: ✅ POST /api/hermes/chat/stream-json`)
-console.log(`[html-api] Cancel:   ✅ POST /api/hermes/chat/stop (送信 body: { run_id })`)
+console.log(`[html-api] ✅ POST /api/hermes/chat/stream       (text SSE)`)
+console.log(`[html-api] ✅ POST /api/hermes/chat/stream-json  (JSON SSE, output 必須)`)
+console.log(`[html-api] ✅ POST /api/hermes/chat/stop         (cancel, body: { run_id })`)
