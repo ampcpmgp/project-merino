@@ -179,16 +179,51 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 5. SSE をそのままパイプ（加工なし）
+    // 5. SSE をパイプ＋JSON検証
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
+        let buf = ''
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
-            if (done) { controller.close(); return }
-            controller.enqueue(value)
+            if (done) {
+              controller.close()
+              return
+            }
+            // チャンクをテキストに変換してバッファ
+            buf += new TextDecoder().decode(value, { stream: true })
+            const parts = buf.split('\n\n')
+            buf = parts.pop() || ''
+
+            for (const part of parts) {
+              const lines = part.split('\n')
+              let ev = '', data = ''
+              for (const l of lines) {
+                if (l.startsWith('event: ')) ev = l.slice(7).trim()
+                else if (l.startsWith('data: ')) data = l.slice(6)
+              }
+
+              if (ev === 'assistant.completed' && data) {
+                try {
+                  const p = JSON.parse(data)
+                  const content = (p.content || '').trim()
+                  if (content && !content.startsWith('{') && !content.startsWith('[')) {
+                    // JSONじゃない → errorイベントを注入
+                    controller.enqueue(e(part + '\n\n'))
+                    controller.enqueue(e(`event: error\ndata: ${JSON.stringify({
+                      error: 'Agent did not return JSON',
+                      detail: 'Response is natural language text, not JSON. Expected a JSON object or array.',
+                      output_type: output,
+                    })}\n\n`))
+                    continue
+                  }
+                } catch { /* parse error in event JSON itself — pass through */ }
+              }
+
+              controller.enqueue(e(part + '\n\n'))
+            }
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
