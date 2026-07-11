@@ -160,9 +160,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
 - JSON以外の文字を1文字も出力してはいけない
 - ユーザーの指示が曖昧でも、推測してJSONを生成すること
 
-出力型: ${output}
-simple の例: {"items":[{"id":1,"name":"サンプル1","value":100}],"total":100}
-complex の例: {"session":{"id":"s1","status":"active"},"champion":{"seed":456},"challengers":[{"seed":123}],"history":[{"round":1,"winner_seed":456}],"meta":{"model":"x"}}`
+出力型: ${output}`
 
     // 3. AbortController 準備
     const streamId = `s-${sid}`
