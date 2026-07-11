@@ -134,90 +134,101 @@ app.post('/api/hermes/chat/stop', async (c) => {
   }
 })
 
-// ── JSON SSE（定義済みJSONを返す）──
+// ── Hermes チャット JSON SSE（テキスト→パース→ファイル保存）──
 app.post('/api/hermes/chat/stream-json', async (c) => {
   try {
     const { message, session_id, output } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
-    if (!output) return c.json({ ok: false, error: 'output required: "simple" or "complex"' }, 400)
+    if (!output) return c.json({ ok: false, error: 'output is required (e.g. "images", "dialogs")' }, 400)
 
-    // 出力型に応じた定義済みJSON
-    const SCHEMAS: Record<string, unknown> = {
-      simple: {
-        items: [
-          { id: 1, name: 'サンプル1', value: 100 },
-          { id: 2, name: 'サンプル2', value: 200 },
-          { id: 3, name: 'サンプル3', value: 300 },
-        ],
-        total: 600,
-        note: `${message} に基づく簡易JSON`,
-      },
-      complex: {
-        session: { id: session_id || 'sess_demo_001', status: 'active' },
-        champion: { seed: 456, url: 'https://fal.media/files/champ.png', score: 0.95, prompt: '赤いドレスの女性、海辺、夕日' },
-        challengers: [
-          { seed: 123, score: 0.72 },
-          { seed: 789, score: 0.88 },
-        ],
-        history: [
-          { round: 1, winner_seed: 456, feedback: '' },
-          { round: 2, winner_seed: 456, feedback: 'もっと明るく' },
-          { round: 3, winner_seed: 789 },
-        ],
-        meta: {
-          model: 'seedream-v5-pro',
-          total_cost: 0.27,
-          elapsed_ms: 8432,
-          created_at: new Date().toISOString(),
-        },
-      },
+    // 1. セッション作成
+    let sid = session_id
+    if (!sid) {
+      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
+        method: 'POST', headers: AUTH_HEADERS, body: '{}',
+      })
+      if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
+      const sess = await sessRes.json()
+      sid = sess.session?.id
+      if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
-    const data = SCHEMAS[output as string]
-    if (!data) return c.json({ ok: false, error: `Unknown output: "${output}". Use "simple" or "complex".` }, 400)
 
-    // ファイル保存
+    // 2. 出力ファイルパス
     const ts = Date.now()
-    const safeId = (session_id || `anon_${ts}`).replace(/[^a-zA-Z0-9_-]/g, '_')
+    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
-    Bun.write(outPath, JSON.stringify(data, null, 2))
 
+    // 3. system prompt（ファイル書き出し指示）
+    const system = `あなたは構造化データを返すモードです。
+ユーザーのリクエストを処理し、結果を ${outFile} に write_file で保存してください。
+JSON.stringify() を使って正しいJSON形式で保存してください。
+
+出力型: ${output}`
+
+    // 4. AbortController 準備
+    const streamId = `s-${sid}`
+    const abortCtl = new AbortController()
+    activeStreams.set(streamId, abortCtl)
+
+    // 5. Sessions API SSE に接続
+    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
+      method: 'POST',
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ message, system }),
+      signal: abortCtl.signal,
+    })
+    if (!apiRes.ok || !apiRes.body) {
+      activeStreams.delete(streamId)
+      const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
+      return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
+    }
+
+    // 6. SSE をパイプ＋終了時に file_url を inject
     const enc = new TextEncoder()
-    const e = (s: string) => enc.encode(s)
     const stream = new ReadableStream({
       start(controller) {
-        // テキスト風デルタ（模擬進捗）
-        const deltas = [
-          'JSONデータを生成しています…',
-          `出力型: ${output}`,
-          '構造を組み立てています…',
-          '保存準備をしています…',
-        ]
-        let i = 0
-        function sendNext() {
-          if (i >= deltas.length) {
-            // 完了イベント
-            controller.enqueue(e(`event: assistant.completed\ndata: ${JSON.stringify({ content: JSON.stringify(data, null, 2) })}\n\n`))
-            // result イベント
-            controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
-              ok: true, file_url: outFile, output, items: Object.keys(data as object).length,
-            })}\n\n`))
+        const reader = apiRes.body!.getReader()
+        function pump(): Promise<void> {
+          return reader.read().then(({ done, value }) => {
+            if (done) {
+              // ストリーム終了 → ファイル存在確認して result イベントを inject
+              const exists = existsSync(outPath)
+              controller.enqueue(enc(`event: result\ndata: ${JSON.stringify({
+                ok: exists,
+                file_url: exists ? outFile : null,
+                error: exists ? undefined : 'Agent did not write output file',
+              })}\n\n`))
+              controller.close()
+              return
+            }
+            controller.enqueue(value)
+            return pump()
+          }).catch((err) => {
+            if (err.name === 'AbortError') { controller.close(); return }
+            console.error('[stream-json] pipe error:', err)
+            controller.enqueue(enc(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`))
             controller.close()
-            return
-          }
-          controller.enqueue(e(`event: assistant.delta\ndata: ${JSON.stringify({ delta: deltas[i] + '\n' })}\n\n`))
-          i++
-          setTimeout(sendNext, 200)
+          })
         }
-        sendNext()
+        pump().finally(() => activeStreams.delete(streamId))
+      },
+      cancel() {
+        abortCtl.abort()
+        activeStreams.delete(streamId)
       },
     })
 
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+      },
     })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
+    console.error('[api/hermes/chat/stream-json] Error:', msg)
     return c.json({ ok: false, error: msg }, 500)
   }
 })
