@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
-import { mkdirSync } from 'fs'
+import { mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const PORT = 3200
@@ -153,10 +153,14 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. system prompt（JSON出力を促す）
+    // 2. system prompt（JSONファイル生成）
+    const ts = Date.now()
+    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
+    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
+    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
+
     const system = `あなたはデータ生成モードです。
-ユーザーのメッセージに応じて、適切な JSON データを生成し、マークダウンのコードブロックで囲んで出力してください。
-必ずJSONを出力すること。JSONの前に簡単な説明を1行入れても構いません。
+ユーザーのリクエストに応じて、JSONファイルを生成してください。
 出力型: ${output}`
 
     // 3. AbortController 準備
@@ -176,36 +180,34 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 5. SSE をパイプ＋完了時にファイル保存＋result注入
+    // 5. SSE をパイプ＋assistant.completed内容をファイル保存
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
-    const ts = Date.now()
-    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
-    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
-    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
-
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
         let buf = ''
-        let savedContent = ''
-        let completed = false
+        let contentFromCompleted = ''
 
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) {
-              // ストリーム終了 → ファイル保存
-              if (completed) {
-                Bun.write(outPath, savedContent)
+              // ストリーム終了 → ファイル保存（write_file されていなければAPIが保存）
+              if (contentFromCompleted && !existsSync(outPath)) {
+                Bun.write(outPath, contentFromCompleted)
               }
+              const fileExists = existsSync(outPath)
               controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
-                ok: true, file_url: completed ? outFile : null, session_id: sid,
+                ok: true,
+                file_url: fileExists ? outFile : null,
+                session_id: sid,
+                output,
               })}\n\n`))
               controller.close()
               return
             }
 
-            // SSEをテキストでパース
+            // SSEをテキストでパースしてassistant.completedを捕捉
             buf += new TextDecoder().decode(value, { stream: true })
             const parts = buf.split('\n\n')
             buf = parts.pop() || ''
@@ -217,18 +219,11 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
                 if (l.startsWith('event: ')) ev = l.slice(7).trim()
                 else if (l.startsWith('data: ')) data = l.slice(6)
               }
-
               if (ev === 'assistant.completed' && data) {
-                completed = true
-                try {
-                  const parsed = JSON.parse(data)
-                  savedContent = parsed.content || ''
-                } catch {}
+                try { contentFromCompleted = JSON.parse(data).content || '' } catch {}
               }
-
               controller.enqueue(e(part + '\n\n'))
             }
-
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
