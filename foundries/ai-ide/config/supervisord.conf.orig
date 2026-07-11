@@ -1,0 +1,136 @@
+[supervisord]
+nodaemon=true
+user=root
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+; ====================================================================
+; supervisorctl が親玉（supervisord）と通信するためのソケット設定
+; ====================================================================
+[unix_http_server]
+file=/var/run/supervisor.sock
+chmod=0770
+chown=root:appuser
+
+[supervisorctl]
+serverurl=unix:///var/run/supervisor.sock
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+; ====================================================================
+; 各種プログラムの実行
+; ====================================================================
+[program:nginx]
+command=/usr/sbin/nginx -g "daemon off;"
+autostart=true
+autorestart=true
+priority=10
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:code-server]
+command=code-server --auth password --bind-addr 0.0.0.0:8080 /
+autostart=true
+autorestart=true
+priority=20
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:n8n]
+command=/home/appuser/app/scripts-user/run_n8n.sh
+autostart=true
+autorestart=true
+priority=30
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:sillytavern]
+command=/home/appuser/app/scripts-user/run_sillytavern.sh
+autostart=true
+autorestart=true
+priority=25
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:excalidraw-hocuspocus]
+command=bun run server/server.ts
+autostart=true
+autorestart=true
+priority=20
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+directory=/home/appuser/app/whiteboard
+
+[program:excalidraw-storage]
+command=bash -c "bun run restore && bun run storage/server.ts"
+autostart=true
+autorestart=true
+priority=20
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+directory=/home/appuser/app/whiteboard
+
+[program:cloudflared]
+command=/home/appuser/app/scripts-user/run_cloudflared.sh
+autostart=true
+autorestart=true
+priority=40
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:html-api]
+command=bun run src/index.ts
+autostart=true
+autorestart=true
+priority=45
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+directory=/workspace/private/html-api
+
+[program:hermes-dashboard]
+command=hermes dashboard
+autostart=true
+autorestart=true
+priority=60
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:hermes-gateway]
+command=hermes gateway run --replace
+autostart=true
+autorestart=true
+priority=50
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",HERMES_API_KEY="change-me-local-dev"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[include]
+files = /workspace/supervisor-conf.d/*.conf
