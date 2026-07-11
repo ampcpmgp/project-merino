@@ -128,8 +128,8 @@ app.post('/api/hermes/chat/stop', async (c) => {
   }
 })
 
-// ── 書式なし同期チャット（互換性維持） ──
-app.post('/api/hermes/chat/new', async (c) => {
+// ── 書式なし同期チャット ──
+app.post('/api/hermes/chat/sync', async (c) => {
   try {
     const { prompt, session_id } = await c.req.json()
     if (!prompt) return c.json({ ok: false, error: 'No prompt' })
@@ -162,6 +162,90 @@ app.post('/api/hermes/chat/new', async (c) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     return c.json({ ok: false, error: msg })
+  }
+})
+
+// ── Hermes チャット JSON SSE ──
+app.post('/api/hermes/chat/stream-json', async (c) => {
+  try {
+    const { message, session_id, output } = await c.req.json()
+    if (!message) return c.json({ ok: false, error: 'No message' }, 400)
+
+    // 1. セッション作成（なければ）
+    let sid = session_id
+    if (!sid) {
+      const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
+        method: 'POST', headers: AUTH_HEADERS, body: '{}',
+      })
+      if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
+      const sess = await sessRes.json()
+      sid = sess.session?.id
+      if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
+    }
+
+    // 2. AbortController 準備
+    const streamId = `s-${sid}`
+    const abortCtl = new AbortController()
+    activeStreams.set(streamId, abortCtl)
+
+    // 3. system prompt 生成（output 指定があればJSONモード）
+    const system = output
+      ? `あなたは構造化データを返すモードです。
+以下のルールに従ってください：
+1. ユーザーのリクエストを処理し、結果をJSON形式で返してください
+2. JSON以外のテキストは一切出力しないでください
+3. 出力するJSONは解析可能な完全な形式にしてください
+
+出力型: ${output}`
+      : undefined
+
+    // 4. Sessions API SSE に接続（system 付き）
+    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
+      method: 'POST',
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ message, system }),
+      signal: abortCtl.signal,
+    })
+    if (!apiRes.ok || !apiRes.body) {
+      activeStreams.delete(streamId)
+      const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
+      return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
+    }
+
+    // 5. SSE をパイプ（そのままクライアントに）
+    const stream = new ReadableStream({
+      start(controller) {
+        const reader = apiRes.body!.getReader()
+        function pump(): Promise<void> {
+          return reader.read().then(({ done, value }) => {
+            if (done) { controller.close(); return }
+            controller.enqueue(value)
+            return pump()
+          }).catch((err) => {
+            if (err.name === 'AbortError') { controller.close(); return }
+            console.error('[stream-json] pipe error:', err)
+            controller.close()
+          })
+        }
+        pump().finally(() => activeStreams.delete(streamId))
+      },
+      cancel() {
+        abortCtl.abort()
+        activeStreams.delete(streamId)
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+      },
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[api/hermes/chat/stream-json] Error:', msg)
+    return c.json({ ok: false, error: msg }, 500)
   }
 })
 
@@ -213,5 +297,7 @@ app.use('*', async (c, next) => {
 serve({ port: PORT, fetch: app.fetch })
 console.log(`[html-api] Running on http://localhost:${PORT}`)
 console.log(`[html-api] Hermes API: ${HERMES_API}`)
-console.log(`[html-api] Session + SSE: ✅ /api/hermes/chat/stream (送信 body: { message, session_id? })`)
-console.log(`[html-api] Cancel (run_id): ✅ /api/hermes/chat/stop (送信 body: { run_id })`)
+console.log(`[html-api] Sync:  ✅ POST /api/hermes/chat/sync`)
+console.log(`[html-api] Stream:   ✅ POST /api/hermes/chat/stream`)
+console.log(`[html-api] JSON SSE: ✅ POST /api/hermes/chat/stream-json`)
+console.log(`[html-api] Cancel:   ✅ POST /api/hermes/chat/stop (送信 body: { run_id })`)
