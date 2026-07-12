@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
-import { mkdirSync, existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { mkdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { jsonrepair } from 'jsonrepair'
 
@@ -160,9 +160,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
-    const system = `保存先: ${outFile}
-
-絶対に質問してはいけません。上記のパスに write_file で保存してください。
+    const system = `絶対に質問してはいけません。
 有効なJSONデータのみを出力してください。JSON.parse()でパースできる完全なJSONである必要があります。
 保存が完了したら「保存完了」とだけ言ってください。
 出力型: ${output}`
@@ -196,25 +194,10 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) {
-              // ストリーム終了 → outFile 確認（Agentがwrite_fileしたか）
-              if (!existsSync(outPath) && completedContent) {
-                // フォールバック1: APIがassistant.completed内容を保存
-                try { Bun.write(outPath, completedContent) } catch {}
-              }
-              if (!existsSync(outPath)) {
-                // フォールバック2: 最近作成されたJSONファイルをスキャン
-                for (const dir of ['/home/appuser', '/workspace', PIPELINE_DIR]) {
-                  try {
-                    const files = readdirSync(dir).filter(f => f.endsWith('.json'))
-                    files.sort((a, b) => statSync(`${dir}/${b}`).mtimeMs - statSync(`${dir}/${a}`).mtimeMs)
-                    const recent = files[0]
-                    if (recent && Date.now() - statSync(`${dir}/${recent}`).mtimeMs < 15000) {
-                      const content = readFileSync(`${dir}/${recent}`, 'utf-8')
-                      Bun.write(outPath, content)
-                      break
-                    }
-                  } catch {}
-                }
+              // ストリーム終了 → assistant.completed 内容をファイル保存＋読み取り
+              let saved = completedContent
+              if (saved) {
+                try { Bun.write(outPath, saved) } catch {}
               }
               const ok = existsSync(outPath)
               let content: string | null = null
@@ -240,7 +223,6 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
                 is_json: isJson,
                 session_id: sid,
                 output,
-                error: ok ? undefined : 'File not found',
               })}\n\n`))
               controller.close()
               return
