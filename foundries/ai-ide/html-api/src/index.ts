@@ -70,7 +70,7 @@ app.post('/api/hermes/chat/stream', async (c) => {
 
     // 4. SSE をそのままクライアントにパイプ
     // pump() 内で run_id を抽出して activeRuns に登録する
-    let runIdRegistered = false
+    let runIdBuf = ''
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
@@ -79,27 +79,26 @@ app.post('/api/hermes/chat/stream', async (c) => {
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) { controller.close(); return }
-            // run_id を抽出（Hermes API の SSE イベントに含まれる）
-            if (!runIdRegistered) {
-              const text = decoder.decode(value, { stream: true })
-              const m = text.match(/"run_id"\s*:\s*"([^"]+)"/)
+            // run_id を抽出（チャンク境界に備えて buf に蓄積）
+            if (!(abortCtl as any).runId) {
+              runIdBuf += decoder.decode(value, { stream: true })
+              const m = runIdBuf.match(/"run_id"\s*:\s*"([^"]+)"/)
               if (m?.[1]) {
+                (abortCtl as any).runId = m[1]
                 activeRuns.set(m[1], abortCtl)
-                runIdRegistered = true
               }
             }
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
+            if (err.name === 'AbortError') return
             console.error('[stream] pipe error:', err)
             try { controller.close() } catch {}
           })
         }
         pump().finally(() => {
-          // cleanup: run_id が登録されていれば削除
-          for (const [rid, ctl] of activeRuns) {
-            if (ctl === abortCtl) { activeRuns.delete(rid); break }
-          }
+          const rid = (abortCtl as any).runId
+          if (rid) activeRuns.delete(rid)
         })
       },
       cancel() {
@@ -205,7 +204,7 @@ ${output}
 
     // 6. SSE パイプ、終了後 outFile 確認
     // pump() 内で run_id を抽出して activeRuns に登録する
-    let runIdRegistered = false
+    let runIdBuf = ''
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
     const stream = new ReadableStream({
@@ -233,26 +232,26 @@ ${output}
               controller.close()
               return
             }
-            // run_id を抽出
-            if (!runIdRegistered) {
-              const text = decoder.decode(value, { stream: true })
-              const m = text.match(/"run_id"\s*:\s*"([^"]+)"/)
+            // run_id を抽出（チャンク境界に備えて buf に蓄積）
+            if (!(abortCtl as any).runId) {
+              runIdBuf += decoder.decode(value, { stream: true })
+              const m = runIdBuf.match(/"run_id"\s*:\s*"([^"]+)"/)
               if (m?.[1]) {
+                (abortCtl as any).runId = m[1]
                 activeRuns.set(m[1], abortCtl)
-                runIdRegistered = true
               }
             }
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
+            if (err.name === 'AbortError') return
             console.error('[stream-json] pipe error:', err)
             try { controller.close() } catch {}
           })
         }
         pump().finally(() => {
-          for (const [rid, ctl] of activeRuns) {
-            if (ctl === abortCtl) { activeRuns.delete(rid); break }
-          }
+          const rid = (abortCtl as any).runId
+          if (rid) activeRuns.delete(rid)
         })
       },
       cancel() {
