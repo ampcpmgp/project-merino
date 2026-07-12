@@ -136,7 +136,7 @@ app.post('/api/hermes/chat/stop', async (c) => {
 // ── Hermes JSON SSE ──
 app.post('/api/hermes/chat/stream-json', async (c) => {
   try {
-    const { message, session_id, output } = await c.req.json()
+    const { message, session_id, output, structure } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
     if (!output) return c.json({ ok: false, error: 'No output type' }, 400)
 
@@ -159,10 +159,11 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
     // 3. system prompt（message に結合）
+    const structBlock = structure ? `\n期待されるJSON構造:\n\`\`\`json\n${structure}\n\`\`\`` : ''
     const system = `## 指示
 
 有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
-質問禁止。出力後はファイルが正しく書き込まれたか検証すること。
+質問禁止。出力後はファイルが正しく書き込まれたか検証すること。${structBlock}
 
 ## 出力型:
 
