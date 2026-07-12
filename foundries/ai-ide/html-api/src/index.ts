@@ -139,6 +139,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const { message, session_id, output, structure } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
     if (!output) return c.json({ ok: false, error: 'No output type' }, 400)
+    if (!structure) return c.json({ ok: false, error: 'No structure' }, 400)
 
     // 1. セッション作成
     let sid = session_id
