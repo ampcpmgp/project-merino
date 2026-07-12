@@ -159,28 +159,9 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
     // 3. system prompt（message に結合）
-    const structures: Record<string, string> = {
-      items: `{
-  "items": [
-    { "id": 1, "name": "Alice", "email": "alice@..." },
-    { "id": 2, "name": "Bob", "email": "bob@..." }
-  ]
-}`,
-      session: `{
-  "session": { "id": "abc123", "title": "...", "status": "active" },
-  "messages": [
-    { "role": "user", "content": "..." },
-    { "role": "assistant", "content": "..." }
-  ]
-}`,
-    }
-    const structure = structures[output] || '{}'
     const system = `【命令】有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
 質問禁止。出力後はファイルが正しく書き込まれたか検証すること。
-出力型: ${output}
-期待されるJSON構造:
-${structure}
-この構造に従ってデータを生成すること。`
+出力型: ${output}`
 
     // 4. AbortController
     const streamId = `s-${sid}`
