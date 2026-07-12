@@ -219,6 +219,7 @@ ${output}
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
+            controller.enqueue(e(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`))
             controller.close()
           })
         }
