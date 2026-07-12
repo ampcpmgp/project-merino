@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { serve } from 'bun'
 import { mkdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { jsonrepair } from 'jsonrepair'
 
 const PORT = 3200
 
@@ -160,7 +161,8 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
     const system = `絶対に質問してはいけません。
-JSONファイルを生成し、内容を jsonrepair で検証してから ${outFile} に write_file で保存してください。
+有効なJSONデータのみを出力してください。JSON.parse()でパースできる完全なJSONである必要があります。
+生成したJSONを ${outFile} に write_file で保存してください。
 終わったら「保存完了」とだけ言ってください。
 出力型: ${output}`
 
@@ -200,13 +202,26 @@ JSONファイルを生成し、内容を jsonrepair で検証してから ${outF
               }
               const ok = existsSync(outPath)
               let content: string | null = null
+              let isJson = false
               if (ok) {
-                try { content = readFileSync(outPath, 'utf-8') } catch {}
+                try {
+                  content = readFileSync(outPath, 'utf-8')
+                  isJson = false
+                  if (content) {
+                    const t = content.trim()
+                    if (t.startsWith('{') || t.startsWith('[')) {
+                      try { JSON.parse(t); isJson = true } catch {
+                        try { jsonrepair(t); isJson = true } catch {}
+                      }
+                    }
+                  }
+                } catch {}
               }
               controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
                 ok,
                 file_url: ok ? outFile : null,
                 content,
+                is_json: isJson,
                 session_id: sid,
                 output,
                 error: ok ? undefined : 'File not found',
@@ -227,7 +242,19 @@ JSONファイルを生成し、内容を jsonrepair で検証してから ${outF
                 else if (l.startsWith('data: ')) data = l.slice(6)
               }
               if (ev === 'assistant.completed' && data) {
-                try { completedContent = JSON.parse(data).content || '' } catch {}
+                try {
+                  let raw = JSON.parse(data).content || ''
+                  // コードブロック抽出 → JSONパース試行 → jsonrepair
+                  const cb = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+                  const candidate = (cb ? cb[1] : raw).trim()
+                  if (candidate) {
+                    try { JSON.parse(candidate); raw = candidate }
+                    catch {
+                      try { const r = jsonrepair(candidate); if (r) raw = r } catch {}
+                    }
+                  }
+                  completedContent = raw
+                } catch {}
               }
               controller.enqueue(e(part + '\n\n'))
             }
