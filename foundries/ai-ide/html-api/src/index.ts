@@ -160,7 +160,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
 
     // 3. system prompt（message に結合して強制力を高める）
     const system = `【命令】有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
-質問禁止。JSON以外のテキストを出力してはいけない。
+質問禁止。
 出力型: ${output}`
 
     // 4. AbortController
