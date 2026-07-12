@@ -164,6 +164,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
 
 絶対に質問してはいけません。上記のパスに write_file で保存してください。
 有効なJSONデータのみを出力してください。JSON.parse()でパースできる完全なJSONである必要があります。
+保存が完了したら「保存完了」とだけ言ってください。
 出力型: ${output}`
 
     // 3. AbortController 準備
