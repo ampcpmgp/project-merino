@@ -2,7 +2,6 @@ import { Hono } from 'hono'
 import { serve } from 'bun'
 import { mkdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { jsonrepair } from 'jsonrepair'
 
 const PORT = 3200
 
@@ -116,7 +115,6 @@ app.post('/api/hermes/chat/stop', async (c) => {
     if (!run_id) return c.json({ ok: false, error: 'No run_id' }, 400)
 
     // ローカルの AbortController で fetch 中断
-    // （run_id から streamId を逆引きできないので全探索）
     for (const [id, ctl] of activeStreams) {
       if (id.endsWith(run_id) || id === run_id) { ctl.abort(); activeStreams.delete(id); break }
     }
@@ -135,12 +133,12 @@ app.post('/api/hermes/chat/stop', async (c) => {
   }
 })
 
-// ── Hermes JSON SSE（stream + system prompt）──
+// ── Hermes JSON SSE ──
 app.post('/api/hermes/chat/stream-json', async (c) => {
   try {
     const { message, session_id, output } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
-    if (!output) return c.json({ ok: false, error: 'output required: "simple" or "complex"' }, 400)
+    if (!output) return c.json({ ok: false, error: 'No output type' }, 400)
 
     // 1. セッション作成
     let sid = session_id
@@ -154,23 +152,23 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. system prompt（JSONファイル生成）
+    // 2. outFile 生成
     const ts = Date.now()
     const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
-    const system = `絶対に質問してはいけません。
-有効なJSONデータのみを出力してください。JSON.parse()でパースできる完全なJSONである必要があります。
-保存が完了したら「保存完了」とだけ言ってください。
+    // 3. system prompt（Agentが write_file で outFile にJSONを出力）
+    const system = `有効なJSONデータを ${outFile} に出力します。出力する際、 jsonrepair を利用します。
+質問禁止。
 出力型: ${output}`
 
-    // 3. AbortController 準備
+    // 4. AbortController
     const streamId = `s-${sid}`
     const abortCtl = new AbortController()
     activeStreams.set(streamId, abortCtl)
 
-    // 4. Hermes API に接続（stream + system）
+    // 5. Hermes API に接続
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
       method: 'POST', headers: AUTH_HEADERS,
       body: JSON.stringify({ message, system }),
@@ -182,80 +180,33 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 5. SSE をパイプ＋終了後に outFile を確認/フォールバック保存
+    // 6. SSE パイプ、終了後 outFile 確認
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
-    let completedContent = ''
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
-        let buf = ''
-
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) {
-              // ストリーム終了 → assistant.completed 内容をファイル保存＋読み取り
-              let saved = completedContent
-              if (saved) {
-                try { Bun.write(outPath, saved) } catch {}
-              }
-              const ok = existsSync(outPath)
               let content: string | null = null
-              let isJson = false
-              if (ok) {
-                try {
-                  content = readFileSync(outPath, 'utf-8')
-                  isJson = false
-                  if (content) {
-                    const t = content.trim()
-                    if (t.startsWith('{') || t.startsWith('[')) {
-                      try { JSON.parse(t); isJson = true } catch {
-                        try { jsonrepair(t); isJson = true } catch {}
-                      }
-                    }
-                  }
-                } catch {}
+              let error: string | undefined
+              if (existsSync(outPath)) {
+                try { content = readFileSync(outPath, 'utf-8') } catch {}
               }
+              if (!content) error = `File not found: ${outFile}`
               controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
-                ok,
-                file_url: ok ? outFile : null,
+                ok: !!content,
+                file_url: content ? outFile : null,
                 content,
-                is_json: isJson,
+                error,
                 session_id: sid,
                 output,
               })}\n\n`))
               controller.close()
               return
             }
-
-            // SSEをパースしてcompletedを捕捉（フォールバック用）
-            buf += new TextDecoder().decode(value, { stream: true })
-            const parts = buf.split('\n\n')
-            buf = parts.pop() || ''
-            for (const part of parts) {
-              const lines = part.split('\n')
-              let ev = '', data = ''
-              for (const l of lines) {
-                if (l.startsWith('event: ')) ev = l.slice(7).trim()
-                else if (l.startsWith('data: ')) data = l.slice(6)
-              }
-              if (ev === 'assistant.completed' && data) {
-                try {
-                  let raw = JSON.parse(data).content || ''
-                  // コードブロック抽出 → JSONパース試行 → jsonrepair
-                  const cb = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
-                  const candidate = (cb ? cb[1] : raw).trim()
-                  if (candidate) {
-                    try { JSON.parse(candidate); raw = candidate }
-                    catch {
-                      try { const r = jsonrepair(candidate); if (r) raw = r } catch {}
-                    }
-                  }
-                  completedContent = raw
-                } catch {}
-              }
-              controller.enqueue(e(part + '\n\n'))
-            }
+            controller.enqueue(value)
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') { controller.close(); return }
