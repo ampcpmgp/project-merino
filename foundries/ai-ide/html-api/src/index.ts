@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
-import { mkdirSync, existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { mkdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 const PORT = 3200
@@ -158,9 +158,9 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
-    // 3. system prompt（message に結合して強制力を高める）
+    // 3. system prompt（message に結合）
     const system = `【命令】有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
-質問禁止。
+質問禁止。出力後はファイルが正しく書き込まれたか検証すること。
 出力型: ${output}`
 
     // 4. AbortController
@@ -192,30 +192,10 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
             if (done) {
               let content: string | null = null
               let error: string | undefined
-
-              // 検証フェーズ1: 指定パスを確認
               if (existsSync(outPath)) {
                 try { content = readFileSync(outPath, 'utf-8') } catch {}
               }
-
-              // 検証フェーズ2: Agentがよく書く /home/appuser/ も確認
-              if (!content) {
-                try {
-                  const files = readdirSync('/home/appuser').filter(f => f.endsWith('.json'))
-                  files.sort((a, b) => statSync(`/home/appuser/${b}`).mtimeMs - statSync(`/home/appuser/${a}`).mtimeMs)
-                  const recent = files[0]
-                  if (recent && Date.now() - statSync(`/home/appuser/${recent}`).mtimeMs < 30000) {
-                    const c = readFileSync(`/home/appuser/${recent}`, 'utf-8')
-                    if (c) {
-                      content = c
-                      // 見つかったファイルを指定パスにコピー
-                      try { Bun.write(outPath, c) } catch {}
-                    }
-                  }
-                } catch {}
-              }
-
-              if (!content) error = `File not found`
+              if (!content) error = 'File not found'
               controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
                 ok: !!content,
                 file_url: content ? outFile : null,
