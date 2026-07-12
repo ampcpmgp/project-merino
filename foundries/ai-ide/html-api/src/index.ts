@@ -157,13 +157,12 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const ts = Date.now()
     const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
-    const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
     // 3. system prompt（message に結合）
     const structBlock = structure ? `\n期待されるJSON構造:\n\`\`\`json\n${structure}\n\`\`\`` : ''
     const system = `## 指示
 
-有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
+有効なJSONデータを ${outPath} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
 質問禁止。出力後はファイルが正しく書き込まれたか検証すること。${structBlock}
 
 ## 出力型:
@@ -207,7 +206,7 @@ ${output}
               if (!content) error = 'File not found'
               controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
                 ok: !!content,
-                file_url: content ? outFile : null,
+                file_url: content ? outPath : null,
                 content,
                 error,
                 session_id: sid,
