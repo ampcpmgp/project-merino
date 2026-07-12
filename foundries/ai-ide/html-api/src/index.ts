@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
-import { mkdirSync, existsSync, readFileSync } from 'fs'
+import { mkdirSync, existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 import { jsonrepair } from 'jsonrepair'
 
@@ -160,9 +160,10 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
-    const system = `絶対に質問してはいけません。
+    const system = `保存先: ${outFile}
+
+絶対に質問してはいけません。上記のパスに write_file で保存してください。
 有効なJSONデータのみを出力してください。JSON.parse()でパースできる完全なJSONである必要があります。
-生成したJSONを ${outFile} に write_file で保存してください。
 終わったら「保存完了」とだけ言ってください。
 出力型: ${output}`
 
@@ -197,8 +198,23 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
             if (done) {
               // ストリーム終了 → outFile 確認（Agentがwrite_fileしたか）
               if (!existsSync(outPath) && completedContent) {
-                // フォールバック: APIが保存
+                // フォールバック1: APIがassistant.completed内容を保存
                 try { Bun.write(outPath, completedContent) } catch {}
+              }
+              if (!existsSync(outPath)) {
+                // フォールバック2: 最近作成されたJSONファイルをスキャン
+                for (const dir of ['/home/appuser', '/workspace', PIPELINE_DIR]) {
+                  try {
+                    const files = readdirSync(dir).filter(f => f.endsWith('.json'))
+                    files.sort((a, b) => statSync(`${dir}/${b}`).mtimeMs - statSync(`${dir}/${a}`).mtimeMs)
+                    const recent = files[0]
+                    if (recent && Date.now() - statSync(`${dir}/${recent}`).mtimeMs < 15000) {
+                      const content = readFileSync(`${dir}/${recent}`, 'utf-8')
+                      Bun.write(outPath, content)
+                      break
+                    }
+                  } catch {}
+                }
               }
               const ok = existsSync(outPath)
               let content: string | null = null
