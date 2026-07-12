@@ -159,7 +159,7 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
 
     // 3. system prompt（message に結合）
-    const structBlock = structure ? `\n期待されるJSON構造:\n\`\`\`json\n${structure}\n\`\`\`` : ''
+    const structBlock = `\n期待されるJSON構造:\n\`\`\`json\n${structure}\n\`\`\``
     const system = `## 指示
 
 有効なJSONデータを ${outPath} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
