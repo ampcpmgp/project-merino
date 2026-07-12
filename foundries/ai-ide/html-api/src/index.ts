@@ -304,6 +304,26 @@ app.get('/api/read', async (c) => {
 // ── Ping ──
 app.get('/api/ping', (c) => c.json({ ok: true }))
 
+// ── SSE Error テスト ──
+app.get('/api/test/sse-error', async (c) => {
+  const stream = new ReadableStream({
+    start(controller) {
+      const enc = new TextEncoder()
+      // 最初に少しだけ delay → delta で "triggering error..." を表示
+      const msg = JSON.stringify({ delta: 'triggering error...', session_id: 'test', run_id: 'test_run' })
+      controller.enqueue(enc.encode(`event: assistant.delta\ndata: ${msg}\n\n`))
+      setTimeout(() => {
+        const err = JSON.stringify({ error: 'Test error', step: 'test', session_id: 'test', run_id: 'test_run' })
+        controller.enqueue(enc.encode(`event: error\ndata: ${err}\n\n`))
+        controller.close()
+      }, 100)
+    },
+  })
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
+  })
+})
+
 // ── CORS ──
 app.use('*', async (c, next) => {
   c.res.headers.set('Access-Control-Allow-Origin', '*')
