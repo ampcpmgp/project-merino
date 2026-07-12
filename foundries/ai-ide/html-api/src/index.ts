@@ -24,8 +24,9 @@ const app = new Hono()
 const PIPELINE_DIR = '/tmp/pipeline'
 mkdirSync(PIPELINE_DIR, { recursive: true })
 
-// ── アクティブなストリーム管理（キャンセル用） ──
-const activeStreams = new Map<string, AbortController>()
+// ── アクティブなストリーム管理（run_id → AbortController）
+// cancel() からは abort せず、stop ハンドラからの exact match のみで abort する。
+const activeRuns = new Map<string, AbortController>()
 
 // ═══════════════════════════════════════════
 // JSON API — `/api/` 配下はすべて JSON 応答
@@ -52,9 +53,7 @@ app.post('/api/hermes/chat/stream', async (c) => {
     }
 
     // 2. AbortController 準備
-    const streamId = `s-${sid}`
     const abortCtl = new AbortController()
-    activeStreams.set(streamId, abortCtl)
 
     // 3. Sessions API SSE に接続
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
@@ -64,33 +63,47 @@ app.post('/api/hermes/chat/stream', async (c) => {
       signal: abortCtl.signal,
     })
     if (!apiRes.ok || !apiRes.body) {
-      activeStreams.delete(streamId)
       const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
       console.error('[stream] Sessions API error:', apiRes.status, err)
       return c.json({ ok: false, error: `Sessions API error (${apiRes.status})` }, 502)
     }
 
     // 4. SSE をそのままクライアントにパイプ
-    const encoder = new TextEncoder()
+    // pump() 内で run_id を抽出して activeRuns に登録する
+    let runIdRegistered = false
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
+        const decoder = new TextDecoder()
+
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) { controller.close(); return }
+            // run_id を抽出（Hermes API の SSE イベントに含まれる）
+            if (!runIdRegistered) {
+              const text = decoder.decode(value, { stream: true })
+              const m = text.match(/"run_id"\s*:\s*"([^"]+)"/)
+              if (m?.[1]) {
+                activeRuns.set(m[1], abortCtl)
+                runIdRegistered = true
+              }
+            }
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
-            if (err.name === 'AbortError') { return } // cancel が既に controller を閉じてる
             console.error('[stream] pipe error:', err)
-            try { controller.close() } catch {}       // 二重 close を握りつぶす
+            try { controller.close() } catch {}
           })
         }
-        pump().finally(() => activeStreams.delete(streamId))
+        pump().finally(() => {
+          // cleanup: run_id が登録されていれば削除
+          for (const [rid, ctl] of activeRuns) {
+            if (ctl === abortCtl) { activeRuns.delete(rid); break }
+          }
+        })
       },
       cancel() {
-        abortCtl.abort()
-        activeStreams.delete(streamId)
+        // abort しない — stop ハンドラからの exact match のみ
       },
     })
 
@@ -108,18 +121,22 @@ app.post('/api/hermes/chat/stream', async (c) => {
   }
 })
 
-// ── ストリームをキャンセル（POST /v1/runs/{run_id}/stop） ──
+// ── ストリームをキャンセル ──
 app.post('/api/hermes/chat/stop', async (c) => {
   try {
     const { run_id } = await c.req.json()
     if (!run_id) return c.json({ ok: false, error: 'No run_id' }, 400)
 
-    // ローカルの AbortController で fetch 中断
-    for (const [id, ctl] of activeStreams) {
-      if (id.endsWith(run_id) || id === run_id) { ctl.abort(); activeStreams.delete(id); break }
+    // 1. ローカルの AbortController を exact match で探して abort
+    //    （cancel() は abort しないため、ここが唯一の local abort 経路）
+    const ctl = activeRuns.get(run_id)
+    if (ctl) {
+      ctl.abort()
+      activeRuns.delete(run_id)
     }
 
-    // Hermes API Server にキャンセル通知
+    // 2. Hermes API Server にもキャンセル通知（Sessions API の run は
+    //    _active_run_agents に未登録のため 404 が返るが、念のため送る）
     const res = await fetch(`${HERMES_API}/v1/runs/${run_id}/stop`, {
       method: 'POST', headers: { 'Authorization': `Bearer ${HERMES_API_KEY}` },
     })
@@ -171,10 +188,8 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
 ${output}
 \`\`\``.trim()
 
-    // 4. AbortController
-    const streamId = `s-${sid}`
+    // 4. AbortController 準備
     const abortCtl = new AbortController()
-    activeStreams.set(streamId, abortCtl)
 
     // 5. Hermes API に接続（system は message に結合）
     const fullMessage = `${system}\n\n${message}`
@@ -184,17 +199,20 @@ ${output}
       signal: abortCtl.signal,
     })
     if (!apiRes.ok || !apiRes.body) {
-      activeStreams.delete(streamId)
       const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
     // 6. SSE パイプ、終了後 outFile 確認
+    // pump() 内で run_id を抽出して activeRuns に登録する
+    let runIdRegistered = false
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
     const stream = new ReadableStream({
       start(controller) {
         const reader = apiRes.body!.getReader()
+        const decoder = new TextDecoder()
+
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) {
@@ -215,17 +233,31 @@ ${output}
               controller.close()
               return
             }
+            // run_id を抽出
+            if (!runIdRegistered) {
+              const text = decoder.decode(value, { stream: true })
+              const m = text.match(/"run_id"\s*:\s*"([^"]+)"/)
+              if (m?.[1]) {
+                activeRuns.set(m[1], abortCtl)
+                runIdRegistered = true
+              }
+            }
             controller.enqueue(value)
             return pump()
           }).catch((err) => {
-            if (err.name === 'AbortError') { controller.close(); return }
-            controller.enqueue(e(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`))
-            controller.close()
+            console.error('[stream-json] pipe error:', err)
+            try { controller.close() } catch {}
           })
         }
-        pump().finally(() => activeStreams.delete(streamId))
+        pump().finally(() => {
+          for (const [rid, ctl] of activeRuns) {
+            if (ctl === abortCtl) { activeRuns.delete(rid); break }
+          }
+        })
       },
-      cancel() { abortCtl.abort(); activeStreams.delete(streamId) },
+      cancel() {
+        // abort しない — stop ハンドラからの exact match のみ
+      },
     })
 
     return new Response(stream, {
