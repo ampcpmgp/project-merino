@@ -159,9 +159,16 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     const outFile = `/tmp/pipeline/${safeId}_${ts}.json`
 
     // 3. system prompt（message に結合）
-    const system = `【命令】有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
+    const system = `## 指示
+
+有効なJSONデータを ${outFile} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
 質問禁止。出力後はファイルが正しく書き込まれたか検証すること。
-出力型: ${output}`
+
+## 出力型:
+
+\`\`\`json
+${output}
+\`\`\``.trim()
 
     // 4. AbortController
     const streamId = `s-${sid}`
