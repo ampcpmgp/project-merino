@@ -20,8 +20,8 @@ const AUTH_HEADERS = {
 const app = new Hono()
 
 // ── Paths ──
-const WORKFLOWS_DIR = '/workspace/private/html-app/ai-workflows/workflows'
-const AI_WORKFLOWS_DIR = '/workspace/private/html-app/ai-workflows'
+const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows/workflows'
+const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows'
 
 // ── ID サニタイズ（パストラバーサル防止）──
 function sanitizeId(id: string): string {
