@@ -23,6 +23,13 @@ const app = new Hono()
 const WORKFLOWS_DIR = '/workspace/private/html-app/ai-workflows/workflows'
 const AI_WORKFLOWS_DIR = '/workspace/private/html-app/ai-workflows'
 
+// ── ID サニタイズ（パストラバーサル防止）──
+function sanitizeId(id: string): string {
+  const safe = id.replace(/[^a-zA-Z0-9_\-\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '')
+  if (!safe) throw new Error('Invalid workflow ID')
+  return safe
+}
+
 // ── Pipeline 出力ディレクトリ ──
 const PIPELINE_DIR = '/tmp/pipeline'
 mkdirSync(PIPELINE_DIR, { recursive: true })
@@ -121,7 +128,8 @@ app.post('/api/workflows', async (c) => {
 // ── 1件取得 ──
 app.get('/api/workflows/:id', async (c) => {
   try {
-    const id = c.req.param('id')
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
     const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
     if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
     const raw = readFileSync(wfPath, 'utf-8')
@@ -136,7 +144,8 @@ app.get('/api/workflows/:id', async (c) => {
 // ── 更新 ──
 app.put('/api/workflows/:id', async (c) => {
   try {
-    const id = c.req.param('id')
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
     const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
     if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
 
@@ -162,7 +171,8 @@ app.put('/api/workflows/:id', async (c) => {
 // ── 削除 ──
 app.delete('/api/workflows/:id', async (c) => {
   try {
-    const id = c.req.param('id')
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
     const dir = join(WORKFLOWS_DIR, id)
     if (!existsSync(dir)) return c.json({ ok: false, error: 'Not found' }, 404)
     rmSync(dir, { recursive: true, force: true })
@@ -176,7 +186,8 @@ app.delete('/api/workflows/:id', async (c) => {
 // ── セッション情報の読み書き ──
 app.get('/api/workflows/:id/session', async (c) => {
   try {
-    const id = c.req.param('id')
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
     const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
     if (!existsSync(sessPath)) {
       return c.json({ ok: true, session: { hermes_session_id: null, last_cell_index: null, status: 'idle', results: {} } })
@@ -191,7 +202,8 @@ app.get('/api/workflows/:id/session', async (c) => {
 
 app.put('/api/workflows/:id/session', async (c) => {
   try {
-    const id = c.req.param('id')
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
     const dir = join(WORKFLOWS_DIR, id)
     mkdirSync(dir, { recursive: true })
     const sessPath = join(dir, 'last-session.json')
