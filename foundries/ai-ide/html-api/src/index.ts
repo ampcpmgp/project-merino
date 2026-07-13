@@ -1,16 +1,15 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
-import { mkdirSync, existsSync, readFileSync } from 'fs'
+import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 
 const PORT = 3200
 
 // Hermes API Server (同一コンテナ内 localhost:8642)
-// AIキーは Docker .env の HERMES_API_KEY から継承される
 const HERMES_API = 'http://127.0.0.1:8642'
 const HERMES_API_KEY = process.env.HERMES_API_KEY
 if (!HERMES_API_KEY) {
-  console.error('[FATAL] HERMES_API_KEY is not set. Add it to Docker .env or supervisor environment.')
+  console.error('[FATAL] HERMES_API_KEY is not set.')
   process.exit(1)
 }
 const AUTH_HEADERS = {
@@ -20,16 +19,195 @@ const AUTH_HEADERS = {
 
 const app = new Hono()
 
+// ── Paths ──
+const WORKFLOWS_DIR = '/workspace/private/html-app/workflows'
+const AI_WORKFLOWS_DIR = '/workspace/private/html-app/ai-workflows'
+
 // ── Pipeline 出力ディレクトリ ──
 const PIPELINE_DIR = '/tmp/pipeline'
 mkdirSync(PIPELINE_DIR, { recursive: true })
 
-// ── アクティブなストリーム管理（run_id → AbortController）
-// cancel() からは abort せず、stop ハンドラからの exact match のみで abort する。
+// ── アクティブなストリーム管理（run_id → AbortController）──
 const activeRuns = new Map<string, AbortController>()
 
 // ═══════════════════════════════════════════
-// JSON API — `/api/` 配下はすべて JSON 応答
+// Workflows API
+// ═══════════════════════════════════════════
+
+// ── 全ワークフロー一覧 ──
+app.get('/api/workflows', async (c) => {
+  try {
+    mkdirSync(WORKFLOWS_DIR, { recursive: true })
+    const entries = readdirSync(WORKFLOWS_DIR, { withFileTypes: true })
+    const workflows: any[] = []
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const wfPath = join(WORKFLOWS_DIR, entry.name, 'workflow.json')
+      if (!existsSync(wfPath)) continue
+      try {
+        const raw = readFileSync(wfPath, 'utf-8')
+        const wf = JSON.parse(raw)
+        workflows.push({
+          id: entry.name,
+          name: wf.name || entry.name,
+          description: wf.description || '',
+          status: wf.status || 'unknown',
+          cells_count: (wf.cells || []).length,
+          updated_at: wf.updated_at || null,
+          created_at: wf.created_at || null,
+        })
+      } catch { /* skip invalid */ }
+    }
+    // sort by created_at desc, then name
+    workflows.sort((a, b) => {
+      if (a.created_at && b.created_at) return b.created_at.localeCompare(a.created_at)
+      return a.name.localeCompare(b.name)
+    })
+    return c.json({ ok: true, workflows })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── ワークフロー作成 ──
+app.post('/api/workflows', async (c) => {
+  try {
+    const { name, description, cells } = await c.req.json()
+    if (!name) return c.json({ ok: false, error: 'No name' }, 400)
+
+    // ID生成: 日付＋名前の英数字部分
+    const ts = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const safeName = name.replace(/[^a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '_').slice(0, 30)
+    let id = `workflow-${ts}_${safeName}`
+    let dir = join(WORKFLOWS_DIR, id)
+    let counter = 1
+    while (existsSync(dir)) {
+      id = `workflow-${ts}_${safeName}_${counter}`
+      dir = join(WORKFLOWS_DIR, id)
+      counter++
+    }
+
+    mkdirSync(dir, { recursive: true })
+
+    const now = new Date().toISOString()
+    const wf = {
+      id,
+      name,
+      description: description || '',
+      created_at: now,
+      updated_at: now,
+      cells: cells || [],
+      status: 'idle' as const,
+    }
+
+    writeFileSync(join(dir, 'workflow.json'), JSON.stringify(wf, null, 2))
+
+    // last-session.json も作成
+    writeFileSync(join(dir, 'last-session.json'), JSON.stringify({
+      hermes_session_id: null,
+      last_cell_index: null,
+      status: 'idle',
+      results: {},
+    }, null, 2))
+
+    return c.json({ ok: true, workflow: wf })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── 1件取得 ──
+app.get('/api/workflows/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
+    if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
+    const raw = readFileSync(wfPath, 'utf-8')
+    const wf = JSON.parse(raw)
+    return c.json({ ok: true, workflow: wf })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── 更新 ──
+app.put('/api/workflows/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
+    if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
+
+    const updates = await c.req.json()
+    const raw = readFileSync(wfPath, 'utf-8')
+    const wf = JSON.parse(raw)
+
+    // 許可する更新フィールド
+    if (updates.name !== undefined) wf.name = updates.name
+    if (updates.description !== undefined) wf.description = updates.description
+    if (updates.cells !== undefined) wf.cells = updates.cells
+    if (updates.status !== undefined) wf.status = updates.status
+    wf.updated_at = new Date().toISOString()
+
+    writeFileSync(wfPath, JSON.stringify(wf, null, 2))
+    return c.json({ ok: true, workflow: wf })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── 削除 ──
+app.delete('/api/workflows/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const dir = join(WORKFLOWS_DIR, id)
+    if (!existsSync(dir)) return c.json({ ok: false, error: 'Not found' }, 404)
+    rmSync(dir, { recursive: true, force: true })
+    return c.json({ ok: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── セッション情報の読み書き ──
+app.get('/api/workflows/:id/session', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+    if (!existsSync(sessPath)) {
+      return c.json({ ok: true, session: { hermes_session_id: null, last_cell_index: null, status: 'idle', results: {} } })
+    }
+    const raw = readFileSync(sessPath, 'utf-8')
+    return c.json({ ok: true, session: JSON.parse(raw) })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+app.put('/api/workflows/:id/session', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const dir = join(WORKFLOWS_DIR, id)
+    mkdirSync(dir, { recursive: true })
+    const sessPath = join(dir, 'last-session.json')
+    const updates = await c.req.json()
+    const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+    const merged = { ...existing, ...updates }
+    writeFileSync(sessPath, JSON.stringify(merged, null, 2))
+    return c.json({ ok: true, session: merged })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ═══════════════════════════════════════════
+// Hermes Chat APIs
 // ═══════════════════════════════════════════
 
 // ── Hermes チャット（Sessions API /chat/stream SSE）──
@@ -38,7 +216,6 @@ app.post('/api/hermes/chat/stream', async (c) => {
     const { message, session_id } = await c.req.json()
     if (!message) return c.json({ ok: false, error: 'No message' }, 400)
 
-    // 1. セッション作成（なければ）
     let sid = session_id
     if (!sid) {
       const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
@@ -52,10 +229,8 @@ app.post('/api/hermes/chat/stream', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id in response' }, 502)
     }
 
-    // 2. AbortController 準備
     const abortCtl = new AbortController()
 
-    // 3. Sessions API SSE に接続
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
       method: 'POST',
       headers: AUTH_HEADERS,
@@ -68,8 +243,6 @@ app.post('/api/hermes/chat/stream', async (c) => {
       return c.json({ ok: false, error: `Sessions API error (${apiRes.status})` }, 502)
     }
 
-    // 4. SSE をそのままクライアントにパイプ
-    // pump() 内で run_id を抽出して activeRuns に登録する
     let runIdBuf = ''
     const stream = new ReadableStream({
       start(controller) {
@@ -79,7 +252,6 @@ app.post('/api/hermes/chat/stream', async (c) => {
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) { controller.close(); return }
-            // run_id を抽出（チャンク境界に備えて buf に蓄積）
             if (!(abortCtl as any).runId) {
               runIdBuf += decoder.decode(value, { stream: true })
               const m = runIdBuf.match(/"run_id"\s*:\s*"([^"]+)"/)
@@ -126,16 +298,12 @@ app.post('/api/hermes/chat/stop', async (c) => {
     const { run_id } = await c.req.json()
     if (!run_id) return c.json({ ok: false, error: 'No run_id' }, 400)
 
-    // 1. ローカルの AbortController を exact match で探して abort
-    //    （cancel() は abort しないため、ここが唯一の local abort 経路）
     const ctl = activeRuns.get(run_id)
     if (ctl) {
       ctl.abort()
       activeRuns.delete(run_id)
     }
 
-    // 2. Hermes API Server にもキャンセル通知（Sessions API の run は
-    //    _active_run_agents に未登録のため 404 が返るが、念のため送る）
     const res = await fetch(`${HERMES_API}/v1/runs/${run_id}/stop`, {
       method: 'POST', headers: { 'Authorization': `Bearer ${HERMES_API_KEY}` },
     })
@@ -157,7 +325,6 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     if (!output) return c.json({ ok: false, error: 'No output type' }, 400)
     if (!structure) return c.json({ ok: false, error: 'No structure' }, 400)
 
-    // 1. セッション作成
     let sid = session_id
     if (!sid) {
       const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
@@ -169,28 +336,15 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
       if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
     }
 
-    // 2. outFile 生成
     const ts = Date.now()
     const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
     const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
 
-    // 3. system prompt（message に結合）
     const structBlock = `\n期待されるJSON構造:\n\`\`\`json\n${structure}\n\`\`\``
-    const system = `## 指示
+    const system = `## 指示\n\n有効なJSONデータを ${outPath} に出力しなさい。出力する際、 jsonrepair を利用しなさい。\n質問禁止。出力後はファイルが正しく書き込まれたか検証すること。${structBlock}\n\n## 出力型:\n\n\`\`\`json\n${output}\n\`\`\``.trim()
 
-有効なJSONデータを ${outPath} に出力しなさい。出力する際、 jsonrepair を利用しなさい。
-質問禁止。出力後はファイルが正しく書き込まれたか検証すること。${structBlock}
-
-## 出力型:
-
-\`\`\`json
-${output}
-\`\`\``.trim()
-
-    // 4. AbortController 準備
     const abortCtl = new AbortController()
 
-    // 5. Hermes API に接続（system は message に結合）
     const fullMessage = `${system}\n\n${message}`
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
       method: 'POST', headers: AUTH_HEADERS,
@@ -202,8 +356,6 @@ ${output}
       return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
     }
 
-    // 6. SSE パイプ、終了後 outFile 確認
-    // pump() 内で run_id を抽出して activeRuns に登録する
     let runIdBuf = ''
     const enc = new TextEncoder()
     const e = (s: string) => enc.encode(s)
@@ -232,7 +384,6 @@ ${output}
               controller.close()
               return
             }
-            // run_id を抽出（チャンク境界に備えて buf に蓄積）
             if (!(abortCtl as any).runId) {
               runIdBuf += decoder.decode(value, { stream: true })
               const m = runIdBuf.match(/"run_id"\s*:\s*"([^"]+)"/)
@@ -309,7 +460,6 @@ app.get('/api/test/sse-error', async (c) => {
   const stream = new ReadableStream({
     start(controller) {
       const enc = new TextEncoder()
-      // 最初に少しだけ delay → delta で "triggering error..." を表示
       const msg = JSON.stringify({ delta: 'triggering error...', session_id: 'test', run_id: 'test_run' })
       controller.enqueue(enc.encode(`event: assistant.delta\ndata: ${msg}\n\n`))
       setTimeout(() => {
@@ -327,7 +477,7 @@ app.get('/api/test/sse-error', async (c) => {
 // ── CORS ──
 app.use('*', async (c, next) => {
   c.res.headers.set('Access-Control-Allow-Origin', '*')
-  c.res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  c.res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   c.res.headers.set('Access-Control-Allow-Headers', 'Content-Type')
   if (c.req.method === 'OPTIONS') return c.body(null, 204)
   await next()
@@ -339,3 +489,6 @@ console.log(`[html-api] Hermes API: ${HERMES_API}`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stream       (text SSE)`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stream-json  (JSON SSE, output 必須)`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stop         (cancel, body: { run_id })`)
+console.log(`[html-api] ✅ GET/POST /api/workflows            (CRUD)`)
+console.log(`[html-api] ✅ GET/PUT/DELETE /api/workflows/:id  (CRUD)`)
+console.log(`[html-api] ✅ GET/PUT /api/workflows/:id/session (session state)`)
