@@ -20,8 +20,8 @@ const AUTH_HEADERS = {
 const app = new Hono()
 
 // ── Paths ──
-const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows/workflows'
-const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows'
+const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || './workflows'
+const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || './ai-workflows'
 
 // ── ID サニタイズ（パストラバーサル防止）──
 function sanitizeId(id: string): string {
@@ -115,7 +115,7 @@ app.post('/api/workflows', async (c) => {
       hermes_session_id: null,
       last_cell_index: null,
       status: 'idle',
-      results: {},
+      cells: {},
     }, null, 2))
 
     return c.json({ ok: true, workflow: wf })
@@ -427,6 +427,233 @@ app.post('/api/hermes/chat/stream-json', async (c) => {
     })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ═══════════════════════════════════════════
+// Workflow Runner API
+// ═══════════════════════════════════════════
+
+// ── ワークフローセル実行 ──
+// json-stream の上位ラッパー: セッション保存をサーバー側で行う
+app.post('/api/workflows/:id/run', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
+    const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
+    if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
+    const workflow = JSON.parse(readFileSync(wfPath, 'utf-8'))
+    const { cell_index } = await c.req.json()
+    if (typeof cell_index !== 'number' || !workflow.cells[cell_index]) {
+      return c.json({ ok: false, error: 'Invalid cell_index' }, 400)
+    }
+    const cell = workflow.cells[cell_index]
+    const cellId = cell.id || 'cell-' + (cell_index + 1)
+    const inp = cell.input || {}
+
+    // Hermes session 作成
+    const sessRes = await fetch(`${HERMES_API}/api/sessions`, {
+      method: 'POST', headers: AUTH_HEADERS, body: '{}',
+    })
+    if (!sessRes.ok) return c.json({ ok: false, error: 'Session creation failed' }, 502)
+    const sess = await sessRes.json()
+    const sid = sess.session?.id
+    if (!sid) return c.json({ ok: false, error: 'No session_id' }, 502)
+
+    // パイプライン出力ファイルパス
+    const ts = Date.now()
+    const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
+    const outPath = join(PIPELINE_DIR, `${safeId}_${ts}.json`)
+
+    // システムプロンプト（json-stream と同じ構成）
+    const structBlock = `\n期待されるJSON構造:\n\`\`\`json\n${inp.structure || '{}'}\n\`\`\``
+    const outputType = cell.output?.type || 'items'
+    const system = `## 指示\n\n有効なJSONデータを ${outPath} に出力しなさい。出力する際、 jsonrepair を利用しなさい。\n質問禁止。出力後はファイルが正しく書き込まれたか検証すること。${structBlock}\n\n## 出力型:\n\n\`\`\`json\n${outputType}\n\`\`\``.trim()
+    const fullMessage = `${system}\n\n${inp.prompt || ''}`
+
+    const abortCtl = new AbortController()
+    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
+      method: 'POST', headers: AUTH_HEADERS,
+      body: JSON.stringify({ message: fullMessage }),
+      signal: abortCtl.signal,
+    })
+    if (!apiRes.ok || !apiRes.body) {
+      const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
+      return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
+    }
+
+    let runIdBuf = ''
+    let thinkingBuf = ''
+    let sseBuf = ''
+    let resultContent: string | null = null
+    let sessionSaved = false
+    let progressiveCounter = 0
+
+    // 実行開始: cell_running をセット、前回の思考をクリア
+    const initSession = () => {
+      const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+      try {
+        const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+        existing.hermes_session_id = sid
+        existing.status = 'running'
+        existing.last_cell_index = cell_index
+        if (!existing.cell_running) existing.cell_running = {}
+        existing.cell_running[cellId] = true
+        existing.thinking = ''  // 前回の思考をクリア
+        writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+      } catch (e) {}
+    }
+    initSession()
+
+    const saveSession = (force = false) => {
+      if (sessionSaved && !force) return
+      const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+      try {
+        const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+        existing.hermes_session_id = sid
+        existing.last_cell_index = cell_index
+        existing.status = resultContent ? 'completed' : 'error'
+        if (!existing.cells) existing.cells = {}
+        existing.cells[cellId] = {
+          thinking: thinkingBuf.slice(-2000),
+          output: resultContent,
+          updated_at: new Date().toISOString(),
+        }
+        // 実行完了: cell_running を解除
+        if (existing.cell_running) existing.cell_running[cellId] = false
+        writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        if (resultContent) sessionSaved = true
+      } catch (e) {
+        console.error('[run] saveSession error:', e)
+      }
+    }
+    // ストリーミング中は thinking のみ保存（output は触らない＝旧データ保持）
+    const saveProgressive = () => {
+      const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+      try {
+        const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+        existing.status = 'running'
+        existing.last_cell_index = cell_index
+        // cells は触らない（output を保持）
+        existing.thinking = thinkingBuf.slice(-2000)
+        writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+      } catch (e) {}
+    }
+    // パイプラインファイルの完了を待つ（cancel / 切断時用、タイムアウト無し）
+    let pollingStopped = false
+    const pollPipelineFile = (): Promise<void> => {
+      return new Promise((resolve) => {
+        const check = () => {
+          if (pollingStopped) return resolve()
+          if (existsSync(outPath)) {
+            try { resultContent = readFileSync(outPath, 'utf-8') } catch {}
+            // saveSession は pump 完了後に行う（thinking が完全に蓄積されてから）
+            return resolve()
+          }
+          setTimeout(check, 1000)
+        }
+        check()
+      })
+    }
+    let pumpResolve: (() => void) | null = null
+    const pumpDone = new Promise<void>((resolve) => {
+      pumpResolve = resolve
+    })
+
+    const enc = new TextEncoder()
+    const e = (s: string) => enc.encode(s)
+
+    const stream = new ReadableStream({
+      start(controller) {
+        const reader = apiRes.body!.getReader()
+        const decoder = new TextDecoder()
+
+        function pump(): Promise<void> {
+          return reader.read().then(({ done, value }) => {
+            if (done) {
+              // done 時パイプラインファイルができていなければ読む
+              if (existsSync(outPath)) {
+                try { resultContent = readFileSync(outPath, 'utf-8') } catch {}
+              }
+              // result イベントを合成（cancel後は enqueue 失敗しても無視）
+              try { controller.enqueue(e(`event: result\ndata: ${JSON.stringify({
+                ok: !!resultContent,
+                content: resultContent,
+                session_id: sid,
+                error: resultContent ? undefined : 'No output',
+              })}\n\n`)) } catch {}
+              saveSession()
+              pollingStopped = true
+              try { controller.close() } catch {}
+              if (pumpResolve) pumpResolve()
+              return
+            }
+            // テキストにデコード（1回のみ）
+            const text = decoder.decode(value, { stream: true })
+            // run_id をキャプチャ
+            if (!(abortCtl as any).runId) {
+              runIdBuf += text
+              const m = runIdBuf.match(/"run_id"\s*:\s*"([^"]+)"/)
+              if (m?.[1]) {
+                (abortCtl as any).runId = m[1]
+                activeRuns.set(m[1], abortCtl)
+              }
+            }
+            // SSE バッファリング: assistant.delta → thinking 蓄積（フロントと同じ行単位パース）
+            sseBuf += text
+            const parts = sseBuf.split('\n\n')
+            sseBuf = parts.pop() || ''
+            for (const part of parts) {
+              const lines = part.split('\n')
+              let eventType = '', dataLine = ''
+              for (const line of lines) {
+                const l = line.replace(/\r$/, '')
+                if (l.startsWith('event: ')) eventType = l.slice(7).trim()
+                else if (l.startsWith('data: ')) dataLine = l.slice(6)
+              }
+              if (eventType === 'assistant.delta' && dataLine) {
+                try {
+                  const d = JSON.parse(dataLine)
+                  if (d.delta) thinkingBuf += d.delta
+                } catch {}
+              }
+            }
+            // progressive 保存（5回に1回）
+            if (++progressiveCounter % 5 === 0) saveProgressive()
+            try { controller.enqueue(value) } catch {}
+            return pump()
+          }).catch((err) => {
+            if (err.name === 'AbortError') return
+            console.error('[run] pipe error:', err)
+            // エラー後も pump 継続（cancel 後も Hermes は動いている）
+            return pump()
+          })
+        }
+        pump().finally(() => {
+          const rid = (abortCtl as any).runId
+          if (rid) activeRuns.delete(rid)
+          if (!sessionSaved) saveSession()
+          if (pumpResolve) pumpResolve()
+        })
+      },
+      cancel() {
+        // ブラウザ切断: pump 完了（thinking 蓄積）を待ってから保存
+        pollPipelineFile().then(() => {
+          pumpDone.then(() => {
+            if (!sessionSaved) saveSession()
+            else if (resultContent) saveSession(true)
+          })
+        })
+      },
+    })
+
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[api/workflows/:id/run] Error:', msg)
     return c.json({ ok: false, error: msg }, 500)
   }
 })
