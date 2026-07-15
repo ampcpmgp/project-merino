@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-mkdir -p /workspace/url-shortcuts
-chown appuser:appuser /workspace/url-shortcuts
+mkdir -p /workspace/url-shortcuts /workspace/private
+chown appuser:appuser /workspace/url-shortcuts /workspace/private
 
 # Ensure SillyTavern data directory exists
 mkdir -p "${SILLYTAVERN_DATAROOT}"
