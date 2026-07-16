@@ -615,7 +615,10 @@ app.post('/api/workflows/:id/run', async (c) => {
               if (eventType === 'assistant.delta' && dataLine) {
                 try {
                   const d = JSON.parse(dataLine)
-                  if (d.delta) thinkingBuf += d.delta
+                  if (d.delta) {
+                    const text = d.delta.replace(/^\n+/, '')
+                    if (text) thinkingBuf += text
+                  }
                 } catch {}
               }
             }
