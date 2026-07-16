@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workflows</title>
+<style>
+:root {
+  --bg: #f0f2f5;
+  --text: #1a1a2e;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  --card-bg: #fff;
+  --card-border: #e2e8f0;
+  --header-bg: linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+  --header-text: #fff;
+  --tag-bg: #f1f5f9;
+  --tag-text: #475569;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --danger: #dc2626;
+  --overlay: rgba(0,0,0,0.4);
+  --modal-bg: #fff;
+  --shadow: rgba(0,0,0,0.08);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #cbd5e1;
+}
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --card-bg: #1a1b23;
+  --card-border: #2d2e3a;
+  --header-bg: linear-gradient(135deg,#0a0a12 0%,#151525 100%);
+  --tag-bg: #1e1f2d;
+  --tag-text: #94a3b8;
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --overlay: rgba(0,0,0,0.6);
+  --modal-bg: #1a1b23;
+  --shadow: rgba(0,0,0,0.3);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #3d3e4a;
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] { --bg: #0f1117; --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #64748b; --card-bg: #1a1b23; --card-border: #2d2e3a; --header-bg: linear-gradient(135deg,#0a0a12 0%,#151525 100%); --tag-bg: #1e1f2d; --tag-text: #94a3b8; --primary: #6366f1; --primary-hover: #818cf8; --overlay: rgba(0,0,0,0.6); --modal-bg: #1a1b23; --shadow: rgba(0,0,0,0.3); --scrollbar-track: transparent; --scrollbar-thumb: #3d3e4a; }
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;height:100vh;height:100dvh}
+body{display:flex;flex-direction:column;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text)}
+.viewer-wrapper::-webkit-scrollbar{width:6px}
+.viewer-wrapper::-webkit-scrollbar-track{background:var(--scrollbar-track)}
+.viewer-wrapper::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:3px}
+header{flex-shrink:0;background:var(--header-bg);color:var(--header-text);padding:1rem 2rem;display:flex;align-items:center;gap:1rem}
+header h1{font-size:1.3rem;font-weight:600}
+header .sub{font-size:0.82rem;opacity:0.6}
+header .theme-btn{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);border:none;border-radius:6px;padding:0.3rem 0.55rem;cursor:pointer;font-size:0.8rem;transition:0.1s;margin-left:auto}
+header .theme-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
+.viewer-wrapper{flex:1;overflow-y:auto;min-height:0;padding:1.5rem 2rem}
+.viewer-wrapper>*{max-width:960px;margin:0 auto}
+button{padding:0.5rem 1rem;border:none;border-radius:8px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+button:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-hover)}
+.btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary)}.btn-outline:hover{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+.card{background:var(--card-bg);border-radius:12px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 3px var(--shadow);border:1px solid var(--card-border)}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem}
+.workflow-item{display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;border-radius:8px;cursor:pointer;transition:background 0.1s}
+.workflow-item:hover{background:color-mix(in srgb,var(--text) 5%,transparent)}
+.workflow-item .info{flex:1;min-width:0}
+.workflow-item .name{font-weight:600;font-size:0.95rem;color:var(--text)}
+.workflow-item .desc{font-size:0.8rem;color:var(--text-muted);margin-top:0.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workflow-item .meta{font-size:0.75rem;color:var(--text-dim);display:flex;gap:0.75rem;margin-top:0.15rem}
+.workflow-item .status{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.75rem;font-weight:500;padding:0.15rem 0.5rem;border-radius:4px}
+.workflow-item .del-btn{flex-shrink:0;background:none;border:none;cursor:pointer;font-size:1rem;padding:0.25rem 0.4rem;border-radius:6px;color:var(--text-dim);transition:all 0.1s;line-height:1;opacity:0}
+.workflow-item:hover .del-btn{opacity:1}
+.workflow-item .del-btn:hover{background:#fee2e2;color:var(--danger)}
+.status-idle{background:var(--tag-bg);color:var(--tag-text)}
+.status-running{background:#d1fae5;color:#065f46}
+.status-completed{background:#dbeafe;color:#1e40af}
+.status-interrupted{background:#fee2e2;color:#991b1b}
+.badge{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:4px;background:var(--tag-bg);color:var(--tag-text)}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-dim)}
+.empty-state .big{font-size:3rem;margin-bottom:0.5rem}
+.empty-state p{font-size:0.9rem}
+.modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--modal-bg);border-radius:16px;padding:1.5rem;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.15);color:var(--text)}
+.modal h2{font-size:1.1rem;font-weight:600;margin-bottom:1rem}
+.modal label{display:block;font-size:0.82rem;font-weight:500;color:var(--text-muted);margin-bottom:0.3rem}
+.modal input,.modal textarea{width:100%;padding:0.55rem 0.75rem;border:1px solid var(--card-border);border-radius:8px;font-size:0.88rem;margin-bottom:0.75rem;background:var(--card-bg);color:var(--text);font-family:inherit}
+.modal textarea{min-height:60px;resize:vertical}
+.modal .actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧩 AI Workflows</h1>
+  <span class="sub">対話的ワークフロービルダー</span>
+  <button class="theme-btn" id="themeBtn" title="テーマ切替">🌓</button>
+  <div style="display:flex;gap:0.5rem">
+    <button class="btn-primary" id="newWorkflowBtn" style="font-size:0.82rem;padding:0.45rem 0.9rem">✨ 新規作成</button>
+  </div>
+</header>
+
+<div class="viewer-wrapper">
+  <div id="workflowList"></div>
+</div>
+
+<!-- 新規作成モーダル -->
+<div id="createModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>✨ 新規ワークフロー</h2>
+    <label for="wfName">名前</label>
+    <input type="text" id="wfName" placeholder="ワークフロー名">
+    <label for="wfDesc">説明</label>
+    <textarea id="wfDesc" placeholder="説明（任意）" style="min-height:50px"></textarea>
+    <div class="actions">
+      <button class="btn-outline" id="cancelCreateBtn">キャンセル</button>
+      <button class="btn-primary" id="confirmCreateBtn">作成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// テーマ管理
+// ════════════════════════════════════════════
+const themes = ['system', 'light', 'dark']
+const themeLabels = { system: '🌓 System', light: '☀️ Light', dark: '🌙 Dark' }
+let currentTheme = localStorage.getItem('wf-theme') || 'system'
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t)
+  document.getElementById('themeBtn').textContent = themeLabels[t] || '🌓'
+  localStorage.setItem('wf-theme', t)
+  currentTheme = t
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const idx = (themes.indexOf(currentTheme) + 1) % themes.length
+  applyTheme(themes[idx])
+})
+applyTheme(currentTheme)
+
+// ════════════════════════════════════════════
+// メイン
+// ════════════════════════════════════════════
+const API = '/html-api'
+let workflows = []
+
+async function loadWorkflows() {
+  const el = document.getElementById('workflowList')
+  el.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:2rem">読み込み中...</p>'
+  try {
+    const res = await fetch(`${API}/api/workflows`)
+    const data = await res.json()
+    if (!data.ok) throw new Error(data.error || 'Unknown error')
+    workflows = data.workflows || []
+    renderWorkflows()
+  } catch (e) {
+    el.innerHTML = `<div class="card" style="color:var(--danger)">❌ 読み込みエラー: ${e.message}</div>`
+  }
+}
+
+function renderWorkflows() {
+  const el = document.getElementById('workflowList')
+  if (workflows.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="big">🧩</div>
+        <p>ワークフローがありません。「新規作成」から始めてください。</p>
+      </div>`
+    return
+  }
+  el.innerHTML = `<div class="card"><h2>📋 ワークフロー一覧 (${workflows.length})</h2></div>`
+  for (const wf of workflows) {
+    const statusClass = 'status-' + (wf.status || 'idle')
+    const cellLabel = wf.cells_count != null ? `${wf.cells_count} セル` : ''
+    const dateLabel = wf.updated_at ? new Date(wf.updated_at).toLocaleString('ja-JP') : ''
+    el.innerHTML += `
+      <div class="card workflow-item" data-id="${escAttr(wf.id)}">
+        <div class="info">
+          <div class="name">${esc(wf.name)}</div>
+          ${wf.description ? `<div class="desc">${esc(wf.description)}</div>` : ''}
+          <div class="meta">
+            <span class="${statusClass}">● ${esc(wf.status || 'idle')}</span>
+            ${cellLabel ? `<span class="badge">📦 ${cellLabel}</span>` : ''}
+            ${dateLabel ? `<span>🕐 ${dateLabel}</span>` : ''}
+          </div>
+        </div>
+        <button class="del-btn" data-id="${escAttr(wf.id)}" title="削除">🗑</button>
+        <span style="color:var(--text-dim);font-size:1.2rem">›</span>
+      </div>`
+  }
+  document.querySelectorAll('.workflow-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.del-btn')) return
+      location.href = `item.html?id=${encodeURIComponent(item.dataset.id)}`
+    })
+  })
+  document.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      const id = btn.dataset.id
+      if (!confirm(`「${btn.closest('.workflow-item').querySelector('.name').textContent}」を削除しますか？`)) return
+      try {
+        const res = await fetch(`${API}/api/workflows/${encodeURIComponent(id)}`, { method: 'DELETE' })
+        const data = await res.json()
+        if (!data.ok) throw new Error(data.error || '削除失敗')
+        btn.closest('.card').remove()
+      } catch (err) {
+        alert('❌ ' + err.message)
+      }
+    })
+  })
+}
+
+function esc(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML
+}
+function escAttr(s) {
+  return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+document.getElementById('newWorkflowBtn').addEventListener('click', () => {
+  document.getElementById('createModal').style.display = 'flex'
+  document.getElementById('wfName').value = ''
+  document.getElementById('wfDesc').value = ''
+  document.getElementById('wfName').focus()
+})
+document.getElementById('cancelCreateBtn').addEventListener('click', () => {
+  document.getElementById('createModal').style.display = 'none'
+})
+document.getElementById('confirmCreateBtn').addEventListener('click', async () => {
+  const name = document.getElementById('wfName').value.trim()
+  if (!name) { alert('名前を入力してください'); return }
+  const desc = document.getElementById('wfDesc').value.trim()
+  try {
+    const res = await fetch(`${API}/api/workflows`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc, cells: [] }),
+    })
+    const data = await res.json()
+    if (!data.ok) throw new Error(data.error || '作成失敗')
+    document.getElementById('createModal').style.display = 'none'
+    location.href = `item.html?id=${encodeURIComponent(data.workflow.id)}`
+  } catch (e) {
+    alert('❌ ' + e.message)
+  }
+})
+document.getElementById('wfName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('confirmCreateBtn').click()
+})
+
+loadWorkflows()
+</script>
+</body>
+</html>

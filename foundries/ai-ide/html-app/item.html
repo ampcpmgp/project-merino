@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow</title>
+<style>
+:root {
+  --bg:#f0f2f5;--text:#1a1a2e;--text-muted:#64748b;--text-dim:#94a3b8;
+  --card-bg:#fff;--card-border:#e2e8f0;--card-hover:#cbd5e1;
+  --header-bg:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+  --cell-bg:#f8fafc;--cell-border:#e2e8f0;
+  --code-bg:#1e1e2e;--code-text:#cdd6f4;--code-border:#334155;
+  --tag-bg:#f1f5f9;--tag-text:#475569;
+  --primary:#4f46e5;--primary-hover:#4338ca;
+  --danger:#dc2626;--success:#059669;--success-bg:#d1fae5;--error-bg:#fee2e2;
+  --overlay:rgba(0,0,0,0.4);--modal-bg:#fff;--shadow:rgba(0,0,0,0.08);
+  --scrollbar-thumb:#cbd5e1;--prop-hover:#e2e8f0;
+  --toast-bg:#1a1a2e;--toast-text:#fff;
+  --thinking-bg:#1a1a2e;--thinking-text:#a6e3a1;
+}
+[data-theme="dark"] {
+  --bg:#0f1117;--text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;
+  --card-bg:#1a1b23;--card-border:#2d2e3a;--card-hover:#3d3e4a;
+  --header-bg:linear-gradient(135deg,#0a0a12 0%,#151525 100%);
+  --cell-bg:#15161e;--cell-border:#2d2e3a;
+  --code-bg:#0d0d15;--code-text:#cdd6f4;--code-border:#2d2e3a;
+  --tag-bg:#1e1f2d;--tag-text:#94a3b8;
+  --primary:#6366f1;--primary-hover:#818cf8;
+  --overlay:rgba(0,0,0,0.6);--modal-bg:#1a1b23;--shadow:rgba(0,0,0,0.3);
+  --scrollbar-thumb:#3d3e4a;--prop-hover:#2d2e3a;
+  --toast-bg:#e2e8f0;--toast-text:#1a1a2e;
+  --thinking-bg:#0d0d15;--thinking-text:#a6e3a1;
+}
+@media(prefers-color-scheme:dark){
+  [data-theme="system"]{--bg:#0f1117;--text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;--card-bg:#1a1b23;--card-border:#2d2e3a;--card-hover:#3d3e4a;--header-bg:linear-gradient(135deg,#0a0a12 0%,#151525 100%);--cell-bg:#15161e;--cell-border:#2d2e3a;--code-bg:#0d0d15;--code-text:#cdd6f4;--code-border:#2d2e3a;--tag-bg:#1e1f2d;--tag-text:#94a3b8;--primary:#6366f1;--primary-hover:#818cf8;--overlay:rgba(0,0,0,0.6);--modal-bg:#1a1b23;--shadow:rgba(0,0,0,0.3);--scrollbar-thumb:#3d3e4a;--prop-hover:#2d2e3a;--toast-bg:#e2e8f0;--toast-text:#1a1a2e;--thinking-bg:#0d0d15;--thinking-text:#a6e3a1;}
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;height:100vh;height:100dvh}
+body{display:flex;flex-direction:column;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:3px}
+header{flex-shrink:0;background:var(--header-bg);color:#fff;padding:0.75rem 2rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+header .back{color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem;padding:0.25rem 0.5rem;border-radius:4px}
+header .back:hover{color:#fff;background:rgba(255,255,255,0.1)}
+header h1{font-size:1.15rem;font-weight:600;flex:1;min-width:0}
+header .actions{display:flex;gap:0.35rem}
+header .theme-btn{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);border:none;border-radius:6px;padding:0.3rem 0.55rem;cursor:pointer;font-size:0.8rem;transition:0.1s}
+header .theme-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
+.viewer-wrapper{flex:1;overflow-y:auto;min-height:0;padding:1.25rem 2rem}
+.viewer-wrapper>*{max-width:1100px;margin:0 auto}
+button{padding:0.4rem 0.8rem;border:none;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;transition:0.12s;white-space:nowrap;font-family:inherit}
+button:disabled{opacity:0.4;cursor:not-allowed}
+.btn-primary{background:var(--primary);color:#fff;transition:all 0.2s ease}.btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px);box-shadow:0 2px 8px color-mix(in srgb,var(--primary)40%,transparent)}
+.btn-success{background:var(--success);color:#fff;transition:all 0.2s ease}
+.btn-success:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 2px 8px color-mix(in srgb,var(--success)40%,transparent)}
+.btn-danger{background:var(--danger);color:#fff;transition:all 0.2s ease}
+.btn-danger:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 2px 8px color-mix(in srgb,var(--danger)40%,transparent)}
+.btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary);transition:all 0.2s ease}
+.btn-outline:hover{background:color-mix(in srgb,var(--primary)8%,transparent);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid transparent;transition:all 0.2s ease}
+.btn-ghost:hover{background:var(--tag-bg);color:var(--text);transform:translateY(-1px)}
+.btn-primary,.btn-success,.btn-danger,.btn-outline,.btn-ghost{cursor:pointer}
+.btn-sm{padding:0.2rem 0.5rem;font-size:0.72rem}
+.btn-tiny{padding:0.15rem 0.35rem;font-size:0.65rem;border-radius:4px}
+.cell-run{position:relative;overflow:hidden;font-size:0.85rem;padding:0.35rem 0.7rem;border-radius:7px;font-weight:600;min-width:36px;min-height:32px}
+.cell-run.running{background:var(--danger);color:#fff;animation:btn-pulse 1.5s ease-in-out infinite}
+.cell-run.running::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.15) 50%,transparent 70%);background-size:200% 100%;animation:btn-shimmer 2s ease-in-out infinite}
+.cell-run.running:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 2px 8px color-mix(in srgb,var(--danger)40%,transparent)}
+@keyframes btn-pulse{0%,100%{opacity:1}50%{opacity:0.85}}
+@keyframes btn-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.save-status{position:fixed;bottom:1rem;right:1rem;font-size:0.7rem;color:var(--text-dim);background:var(--card-bg);padding:0.25rem 0.6rem;border-radius:6px;border:1px solid var(--card-border);opacity:0;transition:opacity 0.3s ease;z-index:100;pointer-events:none}
+.save-status.show{opacity:1}
+.save-status.saved{color:var(--success);border-color:var(--success)}
+.card{background:var(--card-bg);border-radius:12px;padding:1.25rem;margin-bottom:0.75rem;box-shadow:0 1px 3px var(--shadow)}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem}
+.section-title{margin:1rem 0 0.5rem;font-size:0.85rem;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:0.5rem}
+.badge{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.7rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:4px}
+.badge-idle{background:var(--tag-bg);color:var(--tag-text)}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:0.3rem}
+.dot-idle{background:var(--text-dim)}
+.meta-grid{display:grid;grid-template-columns:auto 1fr;gap:0.25rem 0.75rem;font-size:0.8rem}
+.meta-grid .key{color:var(--text-dim)}.meta-grid .val{color:var(--text)}
+
+.cell{background:var(--cell-bg);border:1px solid var(--cell-border);border-radius:10px;padding:1rem;margin-bottom:0.5rem;transition:border 0.12s}
+.cell:hover{border-color:var(--card-hover)}
+.cell-new{animation:cell-enter 0.35s ease-out}
+@keyframes cell-enter{from{opacity:0;transform:translateY(-12px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.cell-header{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;flex-wrap:wrap}
+.cell-num{font-size:0.68rem;font-weight:700;color:var(--text-dim);background:var(--tag-bg);padding:0.1rem 0.45rem;border-radius:4px}
+.cell-label{font-weight:600;font-size:0.9rem;flex:1;min-width:0}
+.cell-actions{display:flex;gap:0.3rem;align-items:center}
+.cell-remove{background:none;border:none;cursor:pointer;font-size:0.9rem;padding:0.15rem 0.35rem;border-radius:4px;color:var(--text-dim);transition:all 0.1s;opacity:0;line-height:1}
+.cell:hover .cell-remove{opacity:1}
+.cell-remove:hover{background:#fee2e2;color:var(--danger)}
+.cell-header .cell-label{font-size:0.72rem}
+.cell-run{font-size:0.72rem;padding:0.15rem 0.5rem}
+.cell-io{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+@media(max-width:768px){.cell-io{grid-template-columns:1fr}}
+
+.struct-label{display:flex;align-items:center;gap:0.4rem;margin-top:0.5rem;margin-bottom:0.2rem}
+.struct-label .label{font-size:0.67rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.03em}
+.struct-valid{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:4px}
+.struct-valid.ok{background:var(--success-bg);color:#065f46}
+.struct-valid.err{background:var(--error-bg);color:#991b1b}
+.struct-err{display:block;font-size:0.78rem;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:0.4rem 0.6rem;margin-top:0.3rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.struct-err:empty{display:none}
+.struct-err .line-marker{display:inline-block;background:#fee2e2;color:#991b1b;border-radius:3px;padding:0 0.35rem;font-weight:700;font-size:0.7rem;margin-right:0.3rem}
+.struct-err .detail{color:#6b7280;font-size:0.7rem;display:block;margin-top:0.2rem}
+.err-line-highlight{background:rgba(239,68,68,0.1);border-left:3px solid #ef4444}
+
+.mode-bar{display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0 0.5rem;border-bottom:1px solid var(--card-border);margin-bottom:0.6rem;flex-wrap:wrap}
+.mode-bar select{padding:0.2rem 0.35rem;border:1px solid var(--card-border);border-radius:4px;font-size:0.7rem;background:var(--card-bg);color:var(--text);outline:none;font-family:inherit}
+.mode-bar .mode-badge{font-size:0.62rem;padding:0.1rem 0.35rem;border-radius:3px;background:var(--tag-bg);color:var(--tag-text)}
+
+.io-header{display:flex;align-items:center;gap:0.4rem;margin-bottom:0.25rem;flex-wrap:wrap}
+.io-header .label{font-size:0.67rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.03em}
+.output-type-badge{font-size:0.65rem;color:var(--text-dim);font-weight:400}
+
+.thinking-area{background:var(--thinking-bg);color:var(--thinking-text);border-radius:6px;padding:0.5rem 0.6rem;font-family:monospace;font-size:0.75rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;margin-bottom:0.4rem;min-height:30px}
+
+.output-json-tree{background:var(--code-bg);border-radius:6px;padding:0.6rem 0.7rem;font-family:monospace;font-size:0.85rem;line-height:1.7;white-space:pre;overflow-x:auto;max-height:240px;overflow-y:auto;cursor:default;outline:none}
+.output-json-tree:focus .prop-line.focused{outline:1px solid var(--primary);outline-offset:-1px;border-radius:3px}
+.prop-line{display:flex;align-items:center;gap:0.25rem;padding:0.06rem 0.15rem;border-radius:3px}
+.prop-key{cursor:pointer;color:#89b4fa;flex-shrink:0;padding:0 0.08rem;border-radius:2px;transition:background 0.1s;font-size:0.8rem}
+.prop-key:hover{background:rgba(137,180,250,0.15)}
+.prop-key.focused{background:rgba(137,180,250,0.25);outline:1px solid var(--primary)}
+.prop-key.flash{background:var(--success);color:#fff;border-radius:3px}
+.prop-collapse{cursor:pointer;user-select:none;width:1em;flex-shrink:0;font-size:0.65rem;color:var(--text-dim);text-align:center}
+.prop-collapse:hover{color:var(--text)}
+.prop-sep{color:var(--text-dim);font-size:0.75rem}
+.prop-val{cursor:pointer;color:#a6e3a1;word-break:break-all;padding:0 0.08rem;border-radius:2px;transition:background 0.1s;font-size:0.8rem}
+.prop-val:hover{background:rgba(166,227,161,0.12)}
+.prop-val.focused{background:rgba(166,227,161,0.2);outline:1px solid var(--primary)}
+.prop-val.str{color:#f9e2af}.prop-val.num{color:#fab387}.prop-val.bool{color:#cba6f7}
+.prop-children{padding-left:1.2em}
+.tree-toolbar{display:flex;gap:0.25rem;margin-bottom:0.25rem;padding-bottom:0.25rem;border-bottom:1px solid var(--card-border)}
+.tree-toolbar button{font-size:0.6rem;padding:0.12rem 0.45rem;border:1px solid var(--card-border);border-radius:3px;background:var(--card-bg);color:var(--text-muted);cursor:pointer;white-space:nowrap;font-weight:600}
+.tree-toolbar button:hover{background:var(--card-border);color:var(--text)}
+.tree-toolbar button:disabled{opacity:0.45}
+.tree-body{min-height:1.5em}
+
+/* ═══ Shared Code Block ═══ */
+.code-block{width:100%;margin:0.25rem 0}
+.code-block-textarea{width:100%;min-height:110px;padding:0.55rem 0.65rem;border:1px solid var(--code-border);border-radius:6px;font-family:monospace;font-size:0.85rem;line-height:1.6;resize:vertical;background:var(--code-bg);color:var(--code-text);tab-size:2;outline:none;transition:border 0.12s;box-sizing:border-box}
+.code-block-textarea:focus{border-color:var(--primary)}
+.code-block-wrap{position:relative;display:flex;flex-direction:column}
+.code-block-fs-btn{position:absolute;top:4px;right:4px;background:rgba(255,255,255,0.06);color:var(--text-dim);border:none;border-radius:4px;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.65rem;line-height:1;z-index:2;transition:0.1s}
+.code-block-fs-btn:hover{color:var(--primary);background:rgba(255,255,255,0.12)}
+.code-block-inline{background:var(--code-bg);border:1px solid var(--primary);border-radius:6px;padding:0.4rem;margin:0.25rem 0.5rem 0.25rem 1.1rem;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--toast-bg);color:var(--toast-text);padding:0.5rem 1rem;border-radius:8px;font-size:0.82rem;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none}
+.toast.show{opacity:1}
+
+.fs-overlay{position:fixed;inset:0;background:var(--overlay);z-index:200;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.fs-modal{background:var(--modal-bg);border-radius:14px;width:100%;max-width:1000px;height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden}
+.fs-header{flex-shrink:0;display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1.25rem;border-bottom:1px solid var(--card-border)}
+.fs-header h3{font-size:0.95rem;font-weight:600;flex:1}
+.fs-body{flex:1;display:flex;overflow:hidden;min-height:0}
+.fs-left{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.fs-textarea{flex:1;padding:1rem 1.25rem;font-family:monospace;font-size:0.85rem;line-height:1.6;border:none;outline:none;resize:none;background:var(--code-bg);color:var(--code-text);tab-size:2;width:100%}
+.fs-preview{flex:1;overflow:auto;padding:1rem 1.25rem;font-family:monospace;font-size:0.85rem;line-height:1.6;white-space:pre-wrap;word-break:break-all;background:var(--preview-bg,var(--code-bg));color:var(--code-text)}
+.fs-right{width:280px;flex-shrink:0;border-left:1px solid var(--card-border);display:flex;flex-direction:column;overflow:hidden;background:var(--code-bg);color:var(--code-text)}
+.fs-right-title{flex-shrink:0;font-size:0.72rem;font-weight:600;color:var(--text-dim);padding:0.6rem 0.75rem;border-bottom:1px solid var(--card-border);text-transform:uppercase;letter-spacing:0.03em}
+.fs-right-body{flex:1;overflow-y:auto;padding:0.5rem 0.6rem;font-size:0.72rem}
+.fs-ref-cell{margin-bottom:1.2rem}
+.fs-ref-cell .ref-label{font-weight:600;color:var(--text-dim);margin-bottom:0.2rem;font-size:0.72rem}
+.fs-ref-cell .ref-tree{font-family:monospace;line-height:1.5;font-size:0.67rem}
+
+.run-here-bar{display:flex;gap:0.4rem;margin-bottom:0.5rem;flex-wrap:wrap}
+
+.modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--modal-bg);border-radius:16px;padding:1.5rem;width:90%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:80vh;overflow-y:auto}
+.modal h2{font-size:1.05rem;font-weight:600;margin-bottom:0.75rem;color:var(--text)}
+.modal .actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem}
+.modal label{display:block;font-size:0.78rem;font-weight:500;color:var(--text-muted);margin-bottom:0.2rem}
+.modal input,.modal textarea{margin-bottom:0.5rem;width:100%;padding:0.5rem 0.7rem;border:1px solid var(--card-border);border-radius:8px;font-size:0.85rem;font-family:inherit;background:var(--card-bg);color:var(--text)}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--text-dim)}
+.empty-state .big{font-size:2.5rem;margin-bottom:0.5rem}.empty-state p{font-size:0.85rem}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">← 一覧</a>
+  <h1 id="headerTitle">ワークフロー</h1>
+  <div class="actions">
+    <button class="theme-btn" id="themeBtn">🌓</button>
+    <button class="theme-btn" id="editMetaBtn" style="font-weight:500">✏️ 編集</button>
+    <button class="theme-btn" id="deleteBtn" style="color:#fca5a5">🗑 削除</button>
+  </div>
+  <span id="saveStatus" class="save-status"></span>
+</header>
+
+<div class="viewer-wrapper">
+  <div id="loading">読み込み中...</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<!-- Run-here bar (fixed at top of cells) -->
+<div id="runHereBar" class="run-here-bar" style="display:none">
+  <button class="btn-primary btn-sm" id="runAllBtn">▶ すべて実行</button>
+</div>
+
+<!-- Fullscreen Editor -->
+<div id="fsModal" class="fs-overlay" style="display:none">
+  <div class="fs-modal">
+    <div class="fs-header">
+      <h3 id="fsTitle">📝 編集</h3>
+      <button class="btn-ghost btn-sm" id="fsPreviewBtn" title="埋め込みプレビュー">🔍</button>
+      <button class="btn-ghost btn-sm" id="fsCloseBtn">✕</button>
+    </div>
+    <div class="fs-body">
+      <div class="fs-left">
+        <textarea class="fs-textarea" id="fsTextarea" spellcheck="false"></textarea>
+        <div class="fs-preview" id="fsPreview" style="display:none"></div>
+        <div class="struct-err" id="fsError"></div>
+      </div>
+      <div class="fs-right" id="fsRight" style="display:none">
+        <div class="fs-right-title">📤 他のセルの構造</div>
+        <div class="fs-right-body" id="fsRightBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>✏️ ワークフロー編集</h2>
+    <label for="editName">名前</label><input type="text" id="editName">
+    <label for="editDesc">説明</label><textarea id="editDesc" style="min-height:50px"></textarea>
+    <div class="actions"><button class="btn-outline" id="cancelEditBtn">キャンセル</button><button class="btn-primary" id="saveEditBtn">保存</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="notifSound" style="display:none"></div>
+
+<script>
+// ═══════════════ Theme ═══════════════
+const themes=['system','light','dark'],tLabels={system:'🌓 System',light:'☀️ Light',dark:'🌙 Dark'}
+let curTheme=localStorage.getItem('wf-theme')||'system'
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('themeBtn');if(b)b.textContent=tLabels[t]||'🌓';localStorage.setItem('wf-theme',t);curTheme=t}
+document.getElementById('themeBtn')?.addEventListener('click',()=>applyTheme(themes[(themes.indexOf(curTheme)+1)%3]))
+applyTheme(curTheme)
+
+// ═══════════════ Main ═══════════════
+const API='/html-api'
+let workflow=null,fsCallback=null
+const params=new URLSearchParams(location.search),workflowId=params.get('id')
+if(!workflowId)document.getElementById('loading').textContent='❌ ワークフローIDが指定されていません'
+else loadWorkflow()
+
+// ═══ セル出力キャッシュ（参照解決用） ═══
+// 出力キャッシュ
+const cellOutputs={}
+// 実行中の AbortController（index → AbortController）
+const currentRuns=new Map()
+
+// 編集値をサーバーに永続化（debounce付き）
+let _persistTimer=null
+function schedulePersist(){
+  clearTimeout(_persistTimer)
+  _persistTimer=setTimeout(async ()=>{
+    try{
+      await putWorkflow({cells:workflow.cells})
+      showSaveStatus('saved','保存完了 ✓','',1500)
+    }catch(e){
+      showSaveStatus('','保存失敗','',2000)
+    }
+  },800)
+}
+function showSaveStatus(cls,text,prevCls,duration){
+  const el=document.getElementById('saveStatus')
+  if(!el)return
+  el.className='save-status show'+(cls?' '+cls:'')
+  el.textContent=text
+  if(prevCls)el.classList.remove(prevCls)
+  if(duration)setTimeout(()=>{el.classList.remove('show');if(duration>800)el.className='save-status'},duration)
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function escAttr(s){return s.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function loadWorkflow(){
+  try{
+    const r=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}`)
+    const d=await r.json()
+    if(!d.ok)throw new Error(d.error||'Not found')
+    workflow=d.workflow;Object.keys(cellOutputs).forEach(k=>delete cellOutputs[k]);render();loadSession()
+  }catch(e){document.getElementById('loading').innerHTML=`<div class="card" style="color:var(--danger)">❌ ${e.message}</div>`}
+}
+
+async function loadSession(){
+  const sess=await getSession()
+  if(!sess.cells)return
+  const cells=workflow.cells||[]
+  for(let i=0;i<cells.length;i++){
+    const c=cells[i],cid=c.id||'cell-'+(i+1)
+    // cell_running[cid] が true なら実行中 → 旧データは表示しない
+    if(sess.cell_running&&sess.cell_running[cid]===true)continue
+    const data=sess.cells[cid]
+    if(!data)continue
+    if(data.thinking){
+      const thinkEl=document.getElementById(`think${i}`)
+      if(thinkEl)thinkEl.textContent=data.thinking.replace(/^\n+/,'')
+    }
+    if(data.output){
+      try{
+        const parsed=parseJSONC(data.output)
+        cellOutputs[cid]=parsed
+        const treeEl=document.getElementById(`ot${i}`)
+        if(treeEl)treeEl.querySelector('.tree-body').innerHTML=buildPropTree(parsed,'',cid)
+        if(treeEl)updateTreeButtons(treeEl)
+      }catch(e){}
+    }
+  }
+  // 実行中セルをポーリング
+  if(sess.cell_running){
+    for(const[cid,running]of Object.entries(sess.cell_running)){
+      if(running!==true)continue
+      const ri=workflow.cells.findIndex(c=>(c.id||'cell-'+(workflow.cells.indexOf(c)+1))===cid)
+      if(ri<0)continue
+      const runBtn=document.querySelector(`.cell-run[data-idx="${ri}"]`)
+      if(runBtn){
+        runBtn.textContent='⏳'
+        runBtn.title='既に実行中...'
+        runBtn.classList.remove('btn-success')
+        runBtn.classList.add('running')
+        runBtn.style.animation='btn-pulse 2s ease-in-out infinite'
+      }
+      const thinkEl=document.getElementById(`think${ri}`)
+      if(thinkEl)thinkEl.textContent='既に実行中...'
+      const treeEl=document.getElementById(`ot${ri}`)
+      if(treeEl)getTreeBody(treeEl,ri).innerHTML='<span style="color:var(--text-dim)">⏳ 既に実行中...</span>'
+      // 完了をポーリング
+      ;(async function pollResult(cellId){
+        let prevThinking=''
+        while(true){
+          await new Promise(r=>setTimeout(r,2000))
+          try{
+            const r=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}/session`)
+            const d=await r.json()
+            if(!d.ok)continue
+            const s=d.session
+            // progressive thinking
+            const prog=s.thinking||''
+            if(prog&&prog!==prevThinking){
+              prevThinking=prog
+              if(thinkEl)thinkEl.textContent=(prog||'').replace(/^\n+/,'')
+            }
+            // 完了判定（cell_running が false かつ cells に出力がある＝新データ）
+            if(s.cell_running&&s.cell_running[cellId]===false&&s.cells&&s.cells[cellId]&&s.cells[cellId].output){
+              const result=s.cells[cellId]
+              if(thinkEl)thinkEl.textContent=(result.thinking||'').replace(/^\n+/,'')
+              if(treeEl){
+                try{
+                  const parsed=parseJSONC(result.output)
+                  cellOutputs[cellId]=parsed
+                  getTreeBody(treeEl,ri).innerHTML=buildPropTree(parsed,'',cellId)
+                  updateTreeButtons(treeEl)
+                }catch(e){
+                  getTreeBody(treeEl,ri).innerHTML=`<span style="color:var(--danger)">パースエラー</span>`
+                }
+              }
+              if(runBtn){
+                runBtn.classList.remove('running')
+                runBtn.textContent='▶'
+                runBtn.title='このセルを実行'
+                runBtn.classList.add('btn-success')
+                runBtn.style.animation=''
+              }
+              break
+            }
+          }catch(e){}
+        }
+      })(cid)
+    }
+  }
+}
+async function putWorkflow(updates){
+  try{
+    const r=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:workflow.name,description:workflow.description,cells:workflow.cells,...updates})})
+    const d=await r.json()
+    if(!d.ok)throw new Error(d.error||'保存失敗');workflow=d.workflow
+  }catch(e){alert('❌ '+e.message)}
+}
+
+// ═══ セッション（思考+結果の保存/復元） ═══
+async function getSession(){
+  try{
+    const r=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}/session`)
+    const d=await r.json()
+    return d.ok?d.session:{}
+  }catch(e){return {}}
+}
+async function putSession(data){
+  try{
+    await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}/session`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  }catch(e){/* 保存失敗は無視 */}
+}
+
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2200)}
+
+// ── 通知音 ──
+function playNotif(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)()
+    const osc=ctx.createOscillator(),gain=ctx.createGain()
+    osc.connect(gain);gain.connect(ctx.destination)
+    osc.frequency.value=880;osc.type='sine'
+    gain.gain.setValueAtTime(0.3,ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3)
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.3)
+  }catch(e){}
+}
+
+// ═══════════════ Render ═══════════════
+function render(){
+  const el=document.getElementById('content')
+  document.getElementById('loading').style.display='none'
+  el.style.display='block'
+  document.getElementById('headerTitle').textContent=`🧩 ${workflow.name}`
+  const st=workflow.status||'idle',cells=workflow.cells||[]
+  const statusHtml=`<span class="badge badge-${st}"><span class="status-dot dot-${st}"></span>${st}</span>`
+  let cellsHtml=''
+
+  if(cells.length===0){
+    cellsHtml=`<div class="empty-state"><div class="big">📦</div><p>セルがありません</p></div>`
+  }else{
+    for(let i=0;i<cells.length;i++){
+      const c=cells[i],inp=c.input||{},out=c.output||{},cid=c.id||'cell-'+(i+1)
+      const mode=c.mode||'json-stream'
+      cellsHtml+=`
+        <div class="cell" data-cell-id="${escAttr(cid)}" data-idx="${i}">
+          <div class="cell-header">
+            <button class="btn-success cell-run" data-idx="${i}" title="このセルを実行">▶</button>
+            <button class="btn-ghost btn-sm cell-run-here" data-idx="${i}" title="ここまで実行">⏵</button>
+            <span class="cell-num">#${i+1}</span>
+            <span class="cell-label">${esc(c.label||'無名')}</span>
+            <span class="cell-actions">
+              <button class="cell-remove" data-idx="${i}" title="削除">✕</button>
+            </span>
+          </div>
+          <div class="mode-bar" data-idx="${i}">
+            <select class="mode-select" data-idx="${i}">
+              <option value="json-stream" ${mode==='json-stream'?'selected':''}>JSON Stream</option>
+              <option value="workflow" ${mode==='workflow'?'selected':''}>他ワークフロー実行</option>
+              <option value="script" ${mode==='script'?'selected':''}>カスタムスクリプト</option>
+              <option value="command" ${mode==='command'?'selected':''}>コマンド実行</option>
+            </select>
+            <span class="mode-badge" id="modeBadge${i}">${mode==='json-stream'?`✅ ${mode}`:'🚧 '+mode}</span>
+          </div>
+          <div class="cell-io">
+            <!-- INPUT -->
+            <div class="io-panel">
+              <div class="io-header">
+                <span class="label">📥 Input</span>
+              </div>
+              <div class="struct-label">
+                <span class="label">📝 プロンプト</span>
+              </div>
+              <div class="code-block-wrap">
+                <textarea class="code-block-textarea" data-idx="${i}" placeholder="Agent への指示を入力..." spellcheck="false" style="min-height:150px">${esc(inp.prompt||'')}</textarea>
+                <button class="code-block-fs-btn expand-btn" data-idx="${i}" data-target="prompt" title="全画面編集">⛶</button>
+              </div>
+              <div class="struct-label">
+                <span class="label">📐 JSONC構造</span>
+                <button class="btn-tiny btn-ghost validate-btn" data-idx="${i}" title="JSON検証">✓</button>
+                <span class="struct-valid" id="structS${i}"></span>
+              </div>
+              <div class="code-block-wrap">
+                <textarea class="code-block-textarea" data-idx="${i}" placeholder='{"items":[]}' spellcheck="false" style="min-height:120px">${esc(inp.structure||'')}</textarea>
+                <button class="code-block-fs-btn expand-btn" data-idx="${i}" data-target="structure" title="全画面編集">⛶</button>
+              </div>
+              <div class="struct-err" id="structErr${i}"></div>
+            </div>
+            <!-- OUTPUT -->
+            <div class="io-panel">
+              <div class="io-header">
+                <span class="label">📤 Output</span>
+                <span class="output-type-badge">${esc(out.type||'—')}</span>
+              </div>
+              <div class="struct-label">
+                <span class="label">💭 思考</span>
+              </div>
+              <div class="thinking-area" id="think${i}" data-idx="${i}"></div>
+              <div class="struct-label">
+                <span class="label">📊 JSON</span>
+              </div>
+              <div class="output-json-tree" id="ot${i}"><div class="tree-toolbar"><button class="expand-all-btn" data-idx="${i}" disabled>▼ すべて展開</button><button class="collapse-all-btn" data-idx="${i}" disabled>▶ すべて折畳</button></div><div class="tree-body"></div></div>
+            </div>
+          </div>
+        </div>`
+    }
+  }
+
+  const dc=workflow.created_at?new Date(workflow.created_at).toLocaleString('ja-JP'):'—'
+  const du=workflow.updated_at?new Date(workflow.updated_at).toLocaleString('ja-JP'):'—'
+  el.innerHTML=`
+    <div class="card"><h2>📋 ${esc(workflow.name)} ${statusHtml}</h2>
+      ${workflow.description?`<p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.75rem">${esc(workflow.description)}</p>`:''}
+      <div class="meta-grid"><span class="key">ID</span><span class="val"><code style="font-size:0.78rem">${esc(workflow.id)}</code></span><span class="key">作成日</span><span class="val">${dc}</span><span class="key">更新日</span><span class="val">${du}</span><span class="key">セル数</span><span class="val">${cells.length}</span></div>
+    </div>
+    <div class="section-title">📦 セル一覧</div>
+    ${cells.length>0?'<div class="run-here-bar"><button class="btn-success btn-sm" id="runAllBtn" style="font-size:0.85rem;padding:0.4rem 0.8rem;font-weight:600">▶ すべて実行</button></div>':''}
+    ${cellsHtml}
+    <div style="display:flex;justify-content:center"><button class="btn-primary" id="addCellBtn" style="padding:0.55rem 1.2rem;font-size:0.85rem;font-weight:600;border-radius:8px">＋ セルを追加</button></div>`
+
+  wireInputAutoSave()
+  wireDeleteButtons()
+  wireAddButton()
+  wireValidateButtons()
+  wireExpandButtons()
+  wirePropertyTrees()
+  wireRunButtons()
+  wireModeSelect()
+}
+
+// ═══════════════ Wire functions ═══════════════
+
+function wireInputAutoSave(){
+  document.querySelectorAll('.code-block-textarea').forEach(el=>{
+    // blur → 即時保存
+    el.addEventListener('blur',saveInput)
+    // input → リアルタイム保存（debounce）
+    el.addEventListener('input',debounce(saveInput,300))
+    // JSONC構造は自動検証も
+    const wrapper=el.closest('.code-block-wrap')
+    const target=wrapper?.querySelector('.code-block-fs-btn')?.dataset?.target
+    if(target==='structure'){
+      el.addEventListener('input',debounce(function(){
+        validateStructure(this)
+      },500))
+    }
+    function saveInput(){
+      const idx=parseInt(this.dataset.idx);if(isNaN(idx)||!workflow.cells[idx])return
+      const c=workflow.cells[idx];if(!c.input)c.input={}
+      const old=JSON.stringify(workflow.cells)
+      const wrapper=this.closest('.code-block-wrap')
+      const target=wrapper?.querySelector('.code-block-fs-btn')?.dataset?.target
+      if(target==='structure'){
+        // 展開後JSONが有効な場合のみ保存
+        if(validateStructure(this))c.input.structure=this.value
+      }else{
+        c.input.prompt=this.value
+      }
+      if(JSON.stringify(workflow.cells)!==old)schedulePersist()
+    }
+  })
+  // スマートインデント（Enter/Tab/Shift+Tab）— structure textarea
+  document.querySelectorAll('.code-block-textarea').forEach(el=>{
+    const wrapper=el.closest('.code-block-wrap')
+    const target=wrapper?.querySelector('.code-block-fs-btn')?.dataset?.target
+    if(target==='structure')el.addEventListener('keydown',e=>smartIndent(el,e))
+  })
+}
+
+// ═══ JSONC サポート ═══
+// コメントを除去（フル除去 → パース用）
+function stripJSONComments(text){
+  let inStr=false,esc=false,out='',i=0
+  while(i<text.length){
+    const ch=text[i],n=text[i+1]
+    if(esc){out+=ch;esc=false;i++;continue}
+    if(ch==='\\'&&inStr){esc=true;out+=ch;i++;continue}
+    if(ch==='"'){inStr=!inStr;out+=ch;i++;continue}
+    if(!inStr&&ch==='/'&&n==='/'){i=text.indexOf('\n',i+2);if(i<0)break;out+='\n';i++;continue}
+    if(!inStr&&ch==='/'&&n==='*'){i=text.indexOf('*/',i+2);if(i<0)break;i+=2;continue}
+    out+=ch;i++
+  }
+  return out
+}
+// コメントを "//" キーとして残す（API送信用）→ 現在は未使用（生JSONCをそのまま送信）
+function stripCommentsForAPI(text){
+  let inStr=false,esc=false,out='',i=0
+  const stack=[]
+  function top(){return stack[stack.length-1]}
+  while(i<text.length){
+    const ch=text[i],n=text[i+1]
+    if(esc){out+=ch;esc=false;i++;continue}
+    if(ch==='\\'&&inStr){esc=true;out+=ch;i++;continue}
+    if(ch==='"'){inStr=!inStr;out+=ch;i++;continue}
+    if(!inStr){
+      if(ch==='{'){stack.push('obj');out+=ch;i++;continue}
+      if(ch==='}'){stack.pop();out+=ch;i++;continue}
+      if(ch==='['){stack.push('arr');out+=ch;i++;continue}
+      if(ch===']'){stack.pop();out+=ch;i++;continue}
+      if(ch==='/'&&n==='/'){
+        const commentEnd=text.indexOf('\n',i+2)
+        const comment=text.slice(i+2,commentEnd<0?undefined:commentEnd).trim()
+        if(top()==='obj'){
+          const prev=out.trimEnd().slice(-1)
+          const needComma=prev!=='{'&&prev!==','
+          out+=`${needComma?',':''}"//":${JSON.stringify(comment)},`
+        }else{out+='\n'}
+        i=commentEnd<0?text.length:commentEnd+1
+        while(i<text.length&&(text[i]===' '||text[i]==='\t'||text[i]==='\n'||text[i]==='\r'))i++
+        if(text[i]===',')i++
+        continue
+      }
+      if(ch==='/'&&n==='*'){
+        const commentEnd=text.indexOf('*/',i+2)
+        const comment=text.slice(i+2,commentEnd<0?undefined:commentEnd).trim()
+        if(top()==='obj'){
+          const prev=out.trimEnd().slice(-1)
+          const needComma=prev!=='{'&&prev!==','
+          out+=`${needComma?',':''}"//":${JSON.stringify(comment)},`
+        }
+        i=commentEnd<0?text.length:commentEnd+2
+        while(i<text.length&&(text[i]===' '||text[i]==='\t'||text[i]==='\n'||text[i]==='\r'))i++
+        if(text[i]===',')i++
+        continue
+      }
+    }
+    out+=ch;i++
+  }
+  return out.replace(/,\s*([}\]])/g,'$1')
+}
+function parseJSONC(text){
+  const clean=stripJSONComments(text)
+  return JSON.parse(clean)
+}
+// tree-body を取得（なければツールバーごと再作成）
+function getTreeBody(treeEl,idx){
+  let b=treeEl.querySelector('.tree-body')
+  if(!b){
+    treeEl.innerHTML=`<div class="tree-toolbar"><button class="expand-all-btn" data-idx="${idx}" disabled>▼ すべて展開</button><button class="collapse-all-btn" data-idx="${idx}" disabled>▶ すべて折畳</button></div><div class="tree-body"></div>`
+    b=treeEl.querySelector('.tree-body')
+  }
+  return b
+}
+
+// ═══ スマートインデント（JSON編集用） ═══
+function smartIndent(el,e){
+  // この関数は execCommand を使いブラウザのネイティブ Undo スタックに記録させる
+  if(e.key==='Enter'){
+    e.preventDefault()
+    const sel=el.selectionStart,val=el.value
+    const lineStart=val.lastIndexOf('\n',sel-1)+1
+    const prevLineStart=val.lastIndexOf('\n',lineStart-2)+1
+    const prevLine=val.slice(prevLineStart,lineStart)
+    const indent=prevLine.match(/^\s*/)[0]
+    const deeper=/[{[]\s*$/.test(prevLine)?'  ':''
+    el.focus()
+    document.execCommand('insertText',false,'\n'+indent+deeper)
+  }else if(e.key==='Tab'&&!e.ctrlKey&&!e.metaKey){
+    e.preventDefault()
+    el.focus()
+    if(e.shiftKey){
+      // 行頭の2スペース削除
+      const sel=el.selectionStart,val=el.value
+      const lineStart=val.lastIndexOf('\n',sel-1)+1
+      const line=val.slice(lineStart)
+      if(line.startsWith('  ')){
+        el.setSelectionRange(lineStart,lineStart+2)
+        document.execCommand('delete',false)
+      }
+    }else{
+      document.execCommand('insertText',false,'  ')
+    }
+  }else if(e.key==='x'&&(e.ctrlKey||e.metaKey)&&el.selectionStart===el.selectionEnd){
+    // Ctrl+X: 選択がなければ行切り取り
+    e.preventDefault()
+    const sel=el.selectionStart,val=el.value
+    const lineStart=val.lastIndexOf('\n',sel-1)+1
+    let lineEnd=val.indexOf('\n',sel)
+    if(lineEnd<0)lineEnd=val.length
+    else lineEnd++
+    const line=val.slice(lineStart,lineEnd)
+    el.setSelectionRange(lineStart,lineEnd)
+    document.execCommand('cut')
+    // execCommand('cut') は非同期でテキストを clipboard に入れる
+    navigator.clipboard.writeText(line.trimEnd()).catch(()=>{})
+  }
+}
+
+// simple debounce
+function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms)}}
+
+function wireDeleteButtons(){
+  document.querySelectorAll('.cell-remove').forEach(b=>{
+    b.addEventListener('click',async e=>{e.stopPropagation();const idx=parseInt(b.dataset.idx);if(!confirm(`セル #${idx+1} 削除？`))return;workflow.cells.splice(idx,1);await putWorkflow({cells:workflow.cells});showSaveStatus('saved','保存完了 ✓','',1500);render()})
+  })
+}
+
+function wireAddButton(){
+  document.getElementById('addCellBtn')?.addEventListener('click',async()=>{
+    workflow.cells.push({id:'cell-'+(workflow.cells.length+1),label:'新規セル',input:{prompt:'',structure:''},output:{type:'items'},mode:'json-stream'})
+    await putWorkflow({cells:workflow.cells});showSaveStatus('saved','保存完了 ✓','',1500);render()
+    const vw=document.querySelector('.viewer-wrapper');if(vw)setTimeout(()=>vw.scrollTop=vw.scrollHeight,50)
+    // 最後のセルにアニメーションクラスを追加
+    const lastCell=document.querySelector('.cell:last-of-type')
+    if(lastCell)lastCell.classList.add('cell-new')
+  })
+}
+
+function wireValidateButtons(){
+  document.querySelectorAll('.validate-btn').forEach(b=>{
+    b.addEventListener('click',function(){
+      const idx=parseInt(this.dataset.idx),ta=document.querySelector(`.code-block-textarea[data-idx="${idx}"]`)
+      if(ta)validateStructure(ta)
+    })
+  })
+}
+
+function countRefs(text){return(text.match(/\{@[^}]+\}/g)||[]).length}
+
+// ═══ JSON 検証（自動＋手動） ═══
+// 戻り値: true=有効, false=エラーあり
+function validateStructure(ta,fsErrEl){
+  const idx=parseInt(ta.dataset.idx)
+  const st=document.getElementById(`structS${idx}`)
+  const err=fsErrEl||document.getElementById(`structErr${idx}`)
+  if(!st)return true
+  const raw=ta.value.trim()
+  // エラー行ハイライト解除
+  ta.classList.remove('err-line-highlight')
+  if(!raw){st.textContent='';st.className='struct-valid';if(err)err.innerHTML='';return true}
+  const parts=[]
+  // 展開後をベースに検証（優先）
+  let resolvedOk=false,resolvedLine=0
+  try{
+    const resolved=resolveRefs(raw)
+    parseJSONC(resolved)
+    resolvedOk=true
+  }catch(e){
+    resolvedLine=extractLine(e.message)
+    parts.push(formatError(e.message,resolvedLine))
+  }
+  // raw の構文は念のためチェック（展開前の参照埋め込みを許容）
+  let rawOk=false,rawLine=0
+  try{parseJSONC(raw);rawOk=true}catch(e){
+    rawLine=extractLine(e.message)
+    if(!resolvedOk&&!hasRefs(raw)){
+      // 参照がなければ raw 構文エラーを表示
+      if(parts.length===0)parts.push(formatError(e.message,rawLine))
+    }
+  }
+  if(resolvedOk){
+    const refs=countRefs(raw)
+    st.textContent=refs>0?`✅ valid (${refs}参照)`: '✅ valid'
+    st.className='struct-valid ok'
+    if(err)err.innerHTML=''
+  }else{
+    st.textContent='❌ エラー';st.className='struct-valid err'
+    if(err)err.innerHTML=parts.join('')
+    const line=resolvedLine||rawLine
+    if(line>0)ta.classList.add('err-line-highlight')
+  }
+  // fsModal 同期
+  const fsErr=document.getElementById('fsError')
+  if(fsErr)fsErr.innerHTML=resolvedOk?'':parts.join('')
+  return resolvedOk
+}
+
+function hasRefs(text){return/\{@[^}]+\}/.test(text)}
+
+function extractLine(msg){
+  const m=msg.match(/line\s+(\d+)/i)
+  return m?parseInt(m[1]):0
+}
+
+function formatError(msg,line){
+  const lineTag=line?`<span class="line-marker">${line}行目</span>`:''
+  const brief=msg.length>80?msg.slice(0,80)+'…':msg
+  return `${lineTag}${esc(brief)}`
+}
+
+// ═══ fsModal スタック（重ねて開く対応） ═══
+const modalStack=[]
+
+function pushModalState(){
+  modalStack.push({
+    title:document.getElementById('fsTitle').textContent,
+    text:document.getElementById('fsTextarea').value,
+    previewBtn:document.getElementById('fsPreviewBtn').style.display,
+    fsRight:document.getElementById('fsRight').style.display,
+    fsTarget:document.getElementById('fsTextarea').dataset.fsTarget,
+    idx:document.getElementById('fsTextarea').dataset.idx,
+    callback:fsCallback,
+    isPreview:fsIsPreview,
+  })
+}
+
+function popModalState(){
+  const st=modalStack.pop()
+  if(!st)return false
+  document.getElementById('fsTitle').textContent=st.title
+  document.getElementById('fsTextarea').value=st.text
+  document.getElementById('fsPreviewBtn').style.display=st.previewBtn
+  document.getElementById('fsRight').style.display=st.fsRight
+  document.getElementById('fsTextarea').dataset.fsTarget=st.fsTarget||'prompt'
+  document.getElementById('fsTextarea').dataset.idx=st.idx||''
+  fsCallback=st.callback
+  fsIsPreview=st.isPreview
+  document.getElementById('fsPreview').style.display=st.isPreview?'':'none'
+  document.getElementById('fsTextarea').style.display=st.isPreview?'none':''
+  return true
+}
+
+function wireExpandButtons(){
+  document.querySelectorAll('.expand-btn').forEach(btn=>{
+    btn.addEventListener('click',function(e){
+      e.stopPropagation()
+      const wrap=this.closest('.code-block-wrap')
+      const ta=wrap?.querySelector('.code-block-textarea')
+      if(!ta)return
+      const idx=parseInt(this.dataset.idx)
+      const target=this.dataset.target||'prompt'
+      const label=target==='structure'?'JSONC構造':'プロンプト'
+      pushModalState()
+      document.getElementById('fsTitle').textContent=`📝 セル #${idx+1} ${label}`
+      document.getElementById('fsTextarea').value=ta.value
+      document.getElementById('fsTextarea').dataset.idx=String(idx)
+      document.getElementById('fsPreviewBtn').style.display=''
+      fsCallback={save:function(v){ta.value=v;const e=new Event('blur',{bubbles:true});ta.dispatchEvent(e);ta.classList.remove('err-line-highlight')}}
+      document.getElementById('fsTextarea').dataset.fsTarget=target||'prompt'
+      buildFsRefPanel(idx)
+      document.getElementById('fsRight').style.display=''
+      document.getElementById('fsModal').style.display='flex';document.getElementById('fsTextarea').focus()
+      if(target==='structure')setTimeout(()=>validateStructure(document.getElementById('fsTextarea')),100)
+    })
+  })
+}
+// ═══ Property Tree ═══
+function buildPropTree(obj,pathPrefix,cellId){
+  if(obj===null||obj===undefined)return''
+  if(typeof obj!=='object'){
+    const refPath=pathPrefix||'root',val=JSON.stringify(obj)
+    const cls=typeof obj==='string'?'str':typeof obj==='number'?'num':typeof obj==='boolean'?'bool':''
+    return`<div class="prop-line" data-ref="${escAttr('@'+cellId+'.'+refPath)}"><span class="prop-key">${esc(refPath)}</span><span class="prop-sep">: </span><span class="prop-val ${cls}">${esc(val)}</span></div>`
+  }
+  const isArr=Array.isArray(obj),entries=isArr?obj.map((v,i)=>[i,v]):Object.entries(obj)
+  if(entries.length===0){
+    const val=isArr?'[]':'{}',refPath=pathPrefix||'root'
+    return`<div class="prop-line" data-ref="${escAttr('@'+cellId+'.'+refPath)}"><span class="prop-key">${esc(refPath||'root')}</span><span class="prop-sep">: </span><span class="prop-val">${esc(val)}</span></div>`
+  }
+  let html=''
+  for(let j=0;j<entries.length;j++){
+    const [k,v]=entries[j],keyStr=isArr?`[${k}]`:String(k)
+    const subPath=pathPrefix?`${pathPrefix}.${keyStr}`:keyStr,ref='@'+cellId+'.'+subPath
+    if(v!==null&&typeof v==='object'){
+      const preview=Array.isArray(v)?`[${v.length}]`:`{${Object.keys(v).length}}`
+      html+=`<div class="prop-line" data-ref="${escAttr(ref)}"><span class="prop-collapse" data-ref="${escAttr(ref)}">▼</span><span class="prop-key">${esc(keyStr)}</span><span class="prop-sep">: </span><span class="prop-val">${esc(preview)}</span></div>`
+      html+=`<div class="prop-children" style="display:block">${buildPropTree(v,subPath,cellId)}</div>`
+    }else{
+      const val=v===null?'null':JSON.stringify(v)
+      const cls=typeof v==='string'?'str':typeof v==='number'?'num':typeof v==='boolean'?'bool':''
+      html+=`<div class="prop-line" data-ref="${escAttr(ref)}"><span class="prop-key">${esc(keyStr)}</span><span class="prop-sep">: </span><span class="prop-val ${cls}">${esc(val)}</span></div>`
+    }
+  }
+  return html
+}
+
+function wirePropertyTrees(){
+  const cells=workflow.cells||[]
+  for(let i=0;i<cells.length;i++){
+    const tree=document.getElementById(`ot${i}`);if(!tree)continue
+    tree.innerHTML=`<div class="tree-body"><span style="color:var(--text-dim)">実行後に結果が表示されます</span></div>`
+  }
+  // 展開/折畳ボタン（イベントデリゲーション）
+}
+document.addEventListener('click',function(e){
+  const exp=e.target.closest('.expand-all-btn')
+  if(exp&&!exp.disabled){
+    const ref=exp.closest('.ref-tree')
+    const tree=ref||document.getElementById(`ot${exp.dataset.idx}`)
+    if(tree){
+      tree.querySelectorAll('.prop-children').forEach(ch=>{ch.style.display='';const t=ch.previousElementSibling?.querySelector('.prop-collapse');if(t)t.textContent='▼'})
+      const container=tree.closest('.ref-tree')||tree
+      const collBtn=container.querySelector('.collapse-all-btn');if(collBtn)collBtn.disabled=false
+      exp.disabled=true
+      updateTreeButtons(exp)
+    }
+  }
+  const col=e.target.closest('.collapse-all-btn')
+  if(col&&!col.disabled){
+    const ref=col.closest('.ref-tree')
+    const tree=ref||document.getElementById(`ot${col.dataset.idx}`)
+    if(tree){
+      tree.querySelectorAll('.prop-children').forEach(ch=>{ch.style.display='none';const t=ch.previousElementSibling?.querySelector('.prop-collapse');if(t)t.textContent='▶'})
+      const container=tree.closest('.ref-tree')||tree
+      const expBtn=container.querySelector('.expand-all-btn');if(expBtn)expBtn.disabled=false
+      col.disabled=true
+      updateTreeButtons(col)
+    }
+  }
+})
+
+// ツールバーの展開/折畳ボタンの状態を更新
+function updateTreeButtons(el){
+  const tree=el.closest('.output-json-tree')||el.closest('.ref-tree')
+  if(!tree)return
+  const expBtn=tree.querySelector('.expand-all-btn'),colBtn=tree.querySelector('.collapse-all-btn')
+  if(!expBtn||!colBtn)return
+  const all=tree.querySelectorAll('.prop-children')
+  if(!all.length){expBtn.disabled=true;colBtn.disabled=true;return}
+  const anyHidden=[...all].some(ch=>ch.style.display==='none')
+  const anyVisible=[...all].some(ch=>ch.style.display!=='none')
+  expBtn.disabled=!anyHidden
+  colBtn.disabled=!anyVisible
+}
+
+// ═══ Mode Select ═══
+function wireModeSelect(){
+  document.querySelectorAll('.mode-select').forEach(sel=>{
+    sel.addEventListener('change',function(){
+      const idx=parseInt(this.dataset.idx)
+      if(!workflow.cells[idx])return
+      const val=this.value
+      workflow.cells[idx].mode=val
+      // badge 更新
+      const badge=document.getElementById('modeBadge'+idx)
+      if(badge)badge.textContent=val==='json-stream'?'json-stream':'🚧 '+val
+      putWorkflow()
+      if(val!=='json-stream')toast('🚧 このモードは準備中です')
+    })
+  })
+}
+
+// ═══ Run Buttons ═══
+function wireRunButtons(){
+  // Run/Cancel toggle (実行▶/停止⏹ を1ボタンで)
+  document.querySelectorAll('.cell-run').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const idx=parseInt(this.dataset.idx)
+      if(this.classList.contains('running')){
+        // 停止
+        const abort=currentRuns.get(idx)
+        if(abort){abort.abort();currentRuns.delete(idx)}
+        this.classList.remove('running')
+        this.textContent='▶'
+        this.title='このセルを実行'
+        this.className='btn-success btn-tiny cell-run'
+        const thinkEl=document.getElementById(`think${idx}`)
+        if(thinkEl)thinkEl.textContent+='\\n⏹ キャンセルされました'
+      }else{
+        runCell(idx)
+      }
+    })
+  })
+  // Run up to here
+  document.querySelectorAll('.cell-run-here').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const idx=parseInt(this.dataset.idx)
+      runCellsUpTo(idx)
+    })
+  })
+  // Run all
+  document.getElementById('runAllBtn')?.addEventListener('click',()=>{
+    const cells=workflow.cells||[]
+    if(cells.length===0)return
+    runCellsUpTo(cells.length-1)
+  })
+}
+
+// ── セル実行（SSE stream-json） ──
+async function runCell(idx){
+  const c=workflow.cells&&workflow.cells[idx]
+  if(!c)return
+  // ── 実行前にフォームの値を保存 ──
+  const allTa=document.querySelectorAll(`.code-block-textarea[data-idx="${idx}"]`)
+  const promptTa=allTa[0] // prompt is first
+  const structTa=allTa[1] // structure is second
+  if(!c.input)c.input={}
+  if(promptTa)c.input.prompt=promptTa.value
+  if(structTa)c.input.structure=structTa.value
+  await putWorkflow()
+  // ── ここから実行 ──
+  const inp=c.input||{},out=c.output||{}
+  if(!inp.prompt){toast('⚠️ プロンプトが空です');return}
+  if(!inp.structure){toast('⚠️ JSONC構造が空です');return}
+
+  const thinkEl=document.getElementById(`think${idx}`)
+  const treeEl=document.getElementById(`ot${idx}`)
+  if(thinkEl)thinkEl.textContent='実行中...'
+  if(treeEl)getTreeBody(treeEl,idx).innerHTML='<span style="color:var(--text-dim)">⏳ 実行中...</span>'
+  
+  // AbortController 作成＋実行ボタンを停止状態に切替
+  const abortCtl=new AbortController()
+  currentRuns.set(idx,abortCtl)
+  const runBtn=document.querySelector(`.cell-run[data-idx="${idx}"]`)
+  if(runBtn){
+    runBtn.textContent='⏹'
+    runBtn.title='実行を停止'
+    runBtn.classList.remove('btn-success')
+    runBtn.classList.add('running')
+  }
+
+  try{
+    const res=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}/run`,{
+      signal:abortCtl.signal,
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({cell_index:idx})
+    })
+    if(!res.ok){toast(`❌ API error ${res.status}`);if(thinkEl)thinkEl.textContent='API error';return}
+    const reader=res.body.getReader()
+    const decoder=new TextDecoder()
+    let buf='',gotResult=false,deltaText=''
+
+    while(true){
+      const{done,value}=await reader.read()
+      if(done)break
+      buf+=decoder.decode(value,{stream:true})
+      const parts=buf.split('\n\n')
+      buf=parts.pop()||''
+      for(const part of parts){
+        const lines=part.split('\n')
+        let eventType='',dataLine=''
+        for(const line of lines){
+          if(line.startsWith('event: '))eventType=line.slice(7).trim()
+          else if(line.startsWith('data: '))dataLine=line.slice(6)
+        }
+        if(!dataLine)continue
+        try{
+          const d=parseJSONC(dataLine)
+          if(eventType==='assistant.delta'&&d.delta){
+            deltaText+=d.delta
+            if(thinkEl)thinkEl.textContent=deltaText
+          }
+          if(eventType==='result'){
+            gotResult=true
+            if(thinkEl)thinkEl.textContent=deltaText
+            const cid=c.id||'cell-'+(idx+1)
+            if(treeEl){
+              if(d.content){
+                try{
+                  const parsed=parseJSONC(d.content)
+                  getTreeBody(treeEl,idx).innerHTML=buildPropTree(parsed,'',cid)
+                  updateTreeButtons(treeEl)
+                }catch(e){
+                  getTreeBody(treeEl,idx).innerHTML=`<span style="color:var(--danger)">パースエラー</span><pre style="color:var(--code-text);font-size:0.72rem">${esc(d.content.slice(0,500))}</pre>`
+                }
+              }else{
+                getTreeBody(treeEl,idx).innerHTML=`<span style="color:var(--danger)">${esc(d.error||'No output')}</span>`
+              }
+            }
+            if(d.content)try{cellOutputs[cid]=parseJSONC(d.content)}catch(e){}
+            playNotif()
+          }
+        }catch(e){}
+      }
+    }
+    if(!gotResult){
+      if(thinkEl)thinkEl.textContent='応答なし'
+      toast('⚠️ 応答がありませんでした')
+    }
+  }catch(e){
+    if(e.name==='AbortError'){/* キャンセルは無視 */}
+    else if(thinkEl)thinkEl.textContent='エラー'
+    if(e.name!=='AbortError')toast(`❌ ${e.message}`)
+  }finally{
+    currentRuns.delete(idx)
+    const runBtn=document.querySelector(`.cell-run[data-idx="${idx}"]`)
+    if(runBtn){
+      runBtn.classList.remove('running')
+      runBtn.textContent='▶'
+      runBtn.title='このセルを実行'
+      runBtn.classList.add('btn-success')
+    }
+  }
+}
+
+async function runCellsUpTo(idx){
+  for(let i=0;i<=idx;i++){
+    const c=workflow.cells&&workflow.cells[i]
+    if(!c)continue
+    await runCell(i)
+  }
+  toast('✅ ここまで実行完了')
+  playNotif()
+}
+
+// ═══ Fullscreen ═══
+// fsTextarea のスマートインデント
+document.getElementById('fsTextarea').addEventListener('keydown',function(e){smartIndent(this,e)})
+// リアルタイム同期（input → debounce → save）
+document.getElementById('fsTextarea').addEventListener('input',debounce(function(){
+    // 構造編集の場合はバリデーションチェック
+    if(this.dataset.fsTarget==='structure'){
+      if(validateStructure(this))fsCallback.save(this.value)
+    }else{
+      fsCallback.save(this.value)
+    }
+  },400))
+
+// ═══ Fullscreen Preview Toggle ═══
+let fsIsPreview=false
+document.getElementById('fsPreviewBtn').addEventListener('click',function(){
+  const ta=document.getElementById('fsTextarea'),pv=document.getElementById('fsPreview')
+  if(fsIsPreview){
+    // back to edit
+    fsIsPreview=false;pv.style.display='none';ta.style.display=''
+    this.textContent='🔍';this.title='埋め込みプレビュー'
+    return
+  }
+  // render preview
+  const raw=ta.value
+  const rendered=resolveRefs(raw)
+  pv.textContent=rendered
+  ta.style.display='none';pv.style.display=''
+  fsIsPreview=true
+  this.textContent='✏️';this.title='編集に戻る'
+})
+
+function resolveRefs(text){
+  return text.replace(/\{@([^}]+)\}/g,(match,ref)=>{
+    try{
+      const val=getResolvedValue(ref)
+      if(val===undefined)return match
+      return JSON.stringify(val,null,2)
+    }catch(e){return match}
+  })
+}
+
+function getResolvedValue(fullRef){
+  // ref like "cell-2.filtered" or "cell-2.filtered[0].name"
+  const m=fullRef.match(/^([^.]+)\.(.+)$/)
+  if(!m)return
+  const cellId=m[1],path=m[2]
+  const cell=workflow.cells.find(c=>c.id===cellId)
+  if(!cell||!cell.input)return
+  try{
+    // 出力キャッシュ（最後の実行結果）を優先、なければ input.structure
+    if(cellId in cellOutputs){
+      const parts=parsePath(path)
+      let cur=cellOutputs[cellId]
+      for(let i=0;i<parts.length;i++){
+        if(cur===undefined||cur===null)return
+        cur=cur[parts[i]]
+      }
+      return cur
+    }
+    const struct=parseJSONC(cell.input.structure||'{}')
+    const parts=parsePath(path)
+    let cur=struct
+    for(let i=0;i<parts.length;i++){
+      if(cur===undefined||cur===null)return
+      cur=cur[parts[i]]
+    }
+    return cur
+  }catch(e){return}
+}
+
+// ═══════════════ Tree: Focus + Keyboard Nav ═══════════════
+let focusedEl=null
+
+function focusElem(el){
+  // clear old focus
+  document.querySelectorAll('.prop-key.focused,.prop-val.focused,.prop-line.focused').forEach(e=>{
+    e.classList.remove('focused')
+    e.removeAttribute('tabindex')
+  })
+  if(!el)return
+  focusedEl=el
+  el.classList.add('focused')
+  el.setAttribute('tabindex','-1')
+  el.focus({preventScroll:true})
+  // ensure tree is scrollable
+  const tree=el.closest('.output-json-tree,.ref-tree')
+  if(tree)tree.setAttribute('tabindex','-1')
+}
+
+function getFlatItems(tree){
+  const items=[]
+  // tree-body の中か、要素自身がコンテナ（ref-tree等の互換）
+  const body=tree.querySelector('.tree-body')||tree
+  function walk(parent){
+    parent.querySelectorAll(':scope > .prop-line').forEach(line=>{
+      const key=line.querySelector('.prop-key')
+      const val=line.querySelector('.prop-val')
+      items.push({line,key,val})
+      const ch=line.nextElementSibling
+      // 折畳まれている子はスキップ（即座に次の兄弟へ）
+      if(ch&&ch.classList.contains('prop-children')&&ch.style.display!=='none')walk(ch)
+    })
+  }
+  walk(body)
+  return items
+}
+
+document.body.addEventListener('click',function(e){
+  const toggle=e.target.closest('.prop-collapse')
+  if(toggle){
+    const line=toggle.closest('.prop-line')
+    const ch=toggle.parentElement?.nextElementSibling
+    if(!ch||!ch.classList.contains('prop-children'))return
+    const h=ch.style.display==='none'
+    if(e.shiftKey) toggleRecursive(ch,h)
+    else{ch.style.display=h?'':'none';toggle.textContent=h?'▼':'▶'}
+    // ツールバーボタンの状態を更新
+    updateTreeButtons(toggle)
+    // focus this line
+    if(line)focusElem(line)
+    return
+  }
+  // key → copy ref + focus
+  const key=e.target.closest('.prop-key')
+  if(key){
+    const line=key.closest('.prop-line')
+    if(!line||!line.dataset.ref)return
+    focusElem(key)
+    e.stopPropagation()
+    const braced='{'+line.dataset.ref+'}'
+    navigator.clipboard.writeText(braced).then(()=>{}).catch(()=>{
+      const ta=document.createElement('textarea');ta.value=braced;ta.style.position='fixed';ta.style.opacity='0'
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)
+    })
+    toast(`📋 ${braced}`)
+    return
+  }
+  // value → edit (single click), wrapped for safety
+  const valEl=e.target.closest('.prop-val')
+  if(valEl&&!valEl.closest('.prop-edit')&&!valEl.querySelector('input,textarea')){
+    focusElem(valEl)
+    e.stopPropagation()
+    try{startEdit(valEl)}catch(err){console.warn('edit err',err)}
+    return
+  }
+  // click on prop-line (not key/val) → focus
+  const line=e.target.closest('.prop-line')
+  if(line&&!e.target.closest('.prop-collapse')&&!e.target.closest('.prop-key')&&!e.target.closest('.prop-val')){
+    focusElem(line)
+  }
+})
+// 右クリック → 参照パスをコピー
+document.body.addEventListener('contextmenu',function(e){
+  const line=e.target.closest('.prop-line')
+  if(!line||!line.dataset.ref)return
+  e.preventDefault()
+  const braced='{'+line.dataset.ref+'}'
+  navigator.clipboard.writeText(braced).then(()=>{}).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=braced;ta.style.position='fixed';ta.style.opacity='0'
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)
+  })
+  toast(`📋 ${braced}`)
+})
+
+// Keyboard navigation on tree
+document.body.addEventListener('keydown',function(e){
+  const tree=e.target.closest('.output-json-tree,.ref-tree')
+  if(!tree)return
+  // Skip if editing inside the tree
+  if(e.target.closest('input,textarea'))return
+
+  const items=getFlatItems(tree)
+  if(items.length===0)return
+
+  let idx=-1
+  if(focusedEl){
+    const found=items.findIndex(item=>
+      item.key===focusedEl||item.val===focusedEl||item.line===focusedEl
+    )
+    if(found>=0)idx=found
+  }
+  if(idx<0)idx=0
+
+  if(e.key==='ArrowDown'){
+    e.preventDefault()
+    const next=Math.min(idx+1,items.length-1)
+    focusElem(items[next].key||items[next].val||items[next].line)
+  }else if(e.key==='ArrowUp'){
+    e.preventDefault()
+    const prev=Math.max(idx-1,0)
+    focusElem(items[prev].key||items[prev].val||items[prev].line)
+  }else if(e.key==='ArrowRight'){
+    e.preventDefault()
+    const item=items[idx]
+    if(!item)return
+    const line=item.line
+    const toggle=line?.querySelector('.prop-collapse')
+    const ch=line?.nextElementSibling
+    if(toggle&&ch&&ch.classList.contains('prop-children')&&ch.style.display==='none'){
+      ch.style.display='';toggle.textContent='▼'
+    }
+  }else if(e.key==='ArrowLeft'){
+    e.preventDefault()
+    const item=items[idx]
+    if(!item)return
+    const line=item.line
+    const toggle=line?.querySelector('.prop-collapse')
+    const ch=line?.nextElementSibling
+    if(toggle&&ch&&ch.classList.contains('prop-children')&&ch.style.display!=='none'){
+      if(e.shiftKey) toggleRecursive(ch,false)
+      else{ch.style.display='none';toggle.textContent='▶'}
+    }
+  }
+})
+
+// ═══════════════ Value Edit ═══════════════
+function startEdit(valEl){
+  const line=valEl.closest('.prop-line')
+  if(!line||!line.dataset.ref)return
+  const ref=line.dataset.ref,raw=valEl.textContent
+  const isArrObj=/^\[.*\]$/.test(raw)||/^\{.*\}$/.test(raw)
+
+  if(isArrObj){
+    // array/object → 直接全画面モーダルを開く
+    const realVal=getValueAtRef(ref)
+    if(realVal===undefined)return
+    openFsForValue(ref,JSON.stringify(realVal,null,2))
+  }else{
+    const isStr=valEl.classList.contains('str')
+    const inp=document.createElement('input')
+    inp.type='text';inp.className='prop-edit'
+    inp.value=isStr?raw.slice(1,-1):raw
+    inp.dataset.ref=ref;inp.dataset.isStr=isStr?'1':'0'
+    valEl.textContent='';valEl.appendChild(inp)
+    inp.focus();inp.select()
+    inp.addEventListener('blur',()=>commitEdit(valEl,inp))
+    inp.addEventListener('keydown',function(ev){
+      if(ev.key==='Enter'){ev.preventDefault();inp.blur()}
+      if(ev.key==='Escape'){ev.preventDefault();cancelEdit(valEl,inp)}
+    })
+  }
+}
+
+function openFsForValue(ref,currentVal){
+  pushModalState()
+  document.getElementById('fsTitle').textContent='📝 JSON編集'
+  document.getElementById('fsTextarea').value=currentVal
+  document.getElementById('fsPreviewBtn').style.display='none'
+  document.getElementById('fsRight').style.display='none'
+  fsCallback={save:function(v){
+    const m=ref.match(/^@([^.]+)\.(.+)$/)
+    if(!m)return
+    try{
+      const parsed=parseJSONC(v)
+      setValueAtRef(ref,parsed)
+      reRenderAtRef(ref)
+      schedulePersist()
+    }catch(e){/* 編集中はparse失敗しても無視 */}
+  }}
+  document.getElementById('fsModal').style.display='flex'
+  document.getElementById('fsTextarea').focus()
+}
+
+function commitEdit(container,input,block){
+  const ref=input.dataset.ref
+  if(!ref)return
+  const isArrObj=input.dataset.isArrObj==='1'
+  let newVal
+  if(isArrObj){
+    try{newVal=parseJSONC(input.value)}
+    catch(e){toast('❌ JSONパースエラー')
+      // Output tree にエラー表示
+      const m=ref.match(/^@([^.]+)\.(.+)$/)
+      if(m){
+        const ci=workflow.cells.findIndex(c=>c.id===m[1])
+        if(ci>=0){const te=document.getElementById(`ot${ci}`);if(te)te.innerHTML=`<span style="color:var(--danger)">❌ ${esc(e.message.slice(0,80))}</span>`}
+      }
+      return}
+  }else{
+    const isStr=input.dataset.isStr==='1',raw=input.value.trim()
+    if(isStr)newVal=raw
+    else if(raw==='true')newVal=true
+    else if(raw==='false')newVal=false
+    else if(raw==='null')newVal=null
+    else if(raw===''||isNaN(Number(raw)))newVal=raw
+    else newVal=Number(raw)
+  }
+  setValueAtRef(ref,newVal)
+  reRenderAtRef(ref)
+  if(block)block.remove()
+  schedulePersist()
+}
+
+function cancelEdit(container,input){
+  container.textContent=input.dataset._orig||''
+}
+
+function getValueAtRef(ref){
+  const m=ref.match(/^@([^.]+)\.(.+)$/)
+  if(!m||!workflow)return
+  const cellId=m[1],path=m[2]
+  const cell=workflow.cells.find(c=>c.id===cellId)
+  if(!cell||!cell.input)return
+  try{
+    // 出力キャッシュ優先、なければ input.structure
+    if(cellId in cellOutputs){
+      const parts=parsePath(path)
+      let cur=cellOutputs[cellId]
+      for(let i=0;i<parts.length;i++){
+        if(cur===undefined||cur===null)return
+        cur=cur[parts[i]]
+      }
+      return cur
+    }
+    const struct=parseJSONC(cell.input.structure||'{}')
+    const parts=parsePath(path)
+    let cur=struct
+    for(let i=0;i<parts.length;i++){
+      if(cur===undefined||cur===null)return
+      cur=cur[parts[i]]
+    }
+    return cur
+  }catch(e){return}
+}
+
+function setValueAtRef(ref,val){
+  const m=ref.match(/^@([^.]+)\.(.+)$/)
+  if(!m||!workflow)return
+  const cellId=m[1],path=m[2]
+  const cell=workflow.cells.find(c=>c.id===cellId)
+  if(!cell||!cell.input)return
+  const parts=parsePath(path)
+  try{
+    // cellOutputs がある → OUTPUTデータの編集のみ（INPUT構造は触らない）
+    if(cellId in cellOutputs){
+      let cur=cellOutputs[cellId]
+      let ok=true
+      for(let i=0;i<parts.length-1;i++){
+        if(cur===undefined||cur===null||typeof cur!=='object'){ok=false;break}
+        cur=cur[parts[i]]
+      }
+      if(ok&&cur!==undefined&&cur!==null&&typeof cur==='object'){
+        cur[parts[parts.length-1]]=val
+        putSession({cells:{[cellId]:{output:JSON.stringify(cellOutputs[cellId])}}})
+      }
+      return  // ← OUTPUT編集はここで終了、INPUT構造は変更しない
+    }
+    
+    // cellOutputs がない → INPUT構造（JSONCテンプレート）を編集
+    const struct=parseJSONC(cell.input.structure||'{}')
+    let cur=struct
+    for(let i=0;i<parts.length-1;i++){if(cur[parts[i]]===undefined)cur[parts[i]]={};cur=cur[parts[i]]}
+    cur[parts[parts.length-1]]=val
+    cell.input.structure=JSON.stringify(struct,null,2)
+    const idx=workflow.cells.indexOf(cell)
+    const ta=document.querySelector(`.code-block-textarea[data-idx="${idx}"]:last-of-type`)
+    if(ta)ta.value=cell.input.structure
+    putWorkflow()
+  }catch(e){}
+}
+
+function reRenderAtRef(ref){
+  const m=ref.match(/^@([^.]+)\.(.+)$/)
+  if(!m)return
+  const cellId=m[1]
+  const cellIdx=workflow.cells.findIndex(c=>c.id===cellId)
+  if(cellIdx<0)return
+  const treeEl=document.getElementById(`ot${cellIdx}`)
+  if(!treeEl)return
+  try{
+    const c=workflow.cells[cellIdx]
+    // cellOutputs 優先、なければ input.structure
+    let struct=cellOutputs[cellId]
+    if(struct===undefined)try{struct=parseJSONC(c.input.structure||'{}')}catch(e){}
+    if(struct===undefined)struct={}
+    const expanded=saveExpandedState(treeEl)
+    getTreeBody(treeEl,cellIdx).innerHTML=buildPropTree(struct,'',c.id||cellId)
+    updateTreeButtons(treeEl)
+    restoreExpandedState(treeEl,expanded)
+  }catch(e){}
+}
+
+function parsePath(p){
+  // "images[0].url" → ["images","0","url"]
+  const parts=[]
+  let cur='',i=0
+  while(i<p.length){
+    if(p[i]==='['){
+      if(cur){parts.push(cur);cur=''}
+      let j=i+1,b=''
+      while(j<p.length&&p[j]!==']'){b+=p[j];j++}
+      if(b!=='')parts.push(b)
+      i=j+1
+    }else if(p[i]==='.'){
+      if(cur!==''){parts.push(cur);cur=''}
+      i++
+    }else{cur+=p[i];i++}
+  }
+  if(cur!=='')parts.push(cur)
+  return parts
+}
+
+// ═══ 展開状態の保存/復元 ═══
+function saveExpandedState(treeEl){
+  const set=new Set()
+  treeEl.querySelectorAll('.prop-children').forEach(ch=>{
+    if(ch.style.display!=='none'){
+      // 直前の .prop-line の data-ref を保存
+      const prev=ch.previousElementSibling
+      if(prev&&prev.classList.contains('prop-line')&&prev.dataset.ref)set.add(prev.dataset.ref)
+    }
+  })
+  return set
+}
+
+function restoreExpandedState(treeEl,expandedSet){
+  if(!expandedSet||expandedSet.size===0)return
+  treeEl.querySelectorAll('.prop-line[data-ref]').forEach(line=>{
+    if(expandedSet.has(line.dataset.ref)){
+      const ch=line.nextElementSibling
+      if(ch&&ch.classList.contains('prop-children')&&ch.style.display==='none'){
+        ch.style.display=''
+        const toggle=line.querySelector('.prop-collapse')
+        if(toggle)toggle.textContent='▼'
+      }
+    }
+  })
+}
+
+// ═══ 再帰的開閉 ═══
+function toggleRecursive(container,open){
+  container.style.display=open?'':'none'
+  // 直前の toggle も更新
+  const prev=container.previousElementSibling
+  if(prev&&prev.classList.contains('prop-line')){
+    const t=prev.querySelector('.prop-collapse')
+    if(t)t.textContent=open?'▼':'▶'
+  }
+  // children も全て同様に
+  container.querySelectorAll('.prop-children').forEach(ch=>{
+    ch.style.display=open?'':'none'
+    const p=ch.previousElementSibling
+    if(p&&p.classList.contains('prop-line')){
+      const t=p.querySelector('.prop-collapse')
+      if(t)t.textContent=open?'▼':'▶'
+    }
+  })
+}
+
+// ═══ Right Panel (Reference Tree) ═══
+function buildFsRefPanel(curIdx){
+  const body=document.getElementById('fsRightBody'),cells=workflow.cells||[]
+  let html=''
+  for(let i=0;i<cells.length;i++){
+    if(i===curIdx)continue
+    const c=cells[i],inp=c.input||{},cid=c.id||'cell-'+(i+1)
+    let struct=cellOutputs[cid]
+    if(struct===undefined)try{struct=parseJSONC(inp.structure||'{}')}catch(e){}
+    if(struct===undefined)struct={}
+    html+=`<div class="fs-ref-cell"><div class="ref-label">#${i+1} ${esc(c.label||'')}</div><div class="ref-tree" data-idx="${i}"><div class="tree-toolbar"><button class="expand-all-btn" data-idx="${i}" disabled>▼ すべて展開</button><button class="collapse-all-btn" data-idx="${i}" disabled>▶ すべて折畳</button></div><div class="tree-body">${buildPropTree(struct,'',cid)}</div></div></div>`
+  }
+  body.innerHTML=html||'<p style=\"color:var(--text-dim);font-size:0.72rem\">参照できるセルがありません</p>'
+  // FSモーダルでは参照ツリーはデフォルトで折畳む
+  body.querySelectorAll('.prop-children').forEach(ch=>ch.style.display='none')
+  body.querySelectorAll('.expand-all-btn').forEach(b=>b.disabled=false)
+  body.querySelectorAll('.collapse-all-btn').forEach(b=>b.disabled=true)
+}
+
+// ═══════════════ Edit Modal ═══════════════
+function openEditModal(){
+  document.getElementById('editName').value=workflow.name
+  document.getElementById('editDesc').value=workflow.description||''
+  document.getElementById('editModal').style.display='flex'
+}
+document.getElementById('editMetaBtn').addEventListener('click',openEditModal)
+document.getElementById('cancelEditBtn').addEventListener('click',()=>document.getElementById('editModal').style.display='none')
+// 編集モーダルも ESC で閉じる
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.getElementById('editModal').style.display==='flex')document.getElementById('cancelEditBtn').click()})
+document.getElementById('fsCloseBtn').addEventListener('click',()=>{
+  if(modalStack.length>1){
+    // スタックがある → 1段階戻す
+    popModalState()
+  }else{
+    // スタックが1つだけ → モーダルを閉じる
+    document.getElementById('fsModal').style.display='none';fsIsPreview=false
+    modalStack.length=0
+  }
+})
+// ESC → close/pop
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('fsModal').style.display==='flex')document.getElementById('fsCloseBtn').click()
+})
+document.getElementById('saveEditBtn').addEventListener('click',async()=>{
+  const n=document.getElementById('editName').value.trim();if(!n){alert('名前を入力してください');return}
+  const d=document.getElementById('editDesc').value.trim()
+  try{
+    const r=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,description:d,cells:workflow.cells})})
+    const data=await r.json()
+    if(!data.ok)throw new Error(data.error||'保存失敗')
+    document.getElementById('editModal').style.display='none';workflow=data.workflow;render()
+  }catch(e){alert('❌ '+e.message)}
+})
+document.getElementById('deleteBtn').addEventListener('click',async()=>{
+  if(!confirm(`「${workflow.name}」を削除しますか？`))return
+  try{const r=await fetch(`${API}/api/workflows/${encodeURIComponent(workflowId)}`,{method:'DELETE'});const d=await r.json();if(!d.ok)throw new Error(d.error||'削除失敗');location.href='index.html'}catch(e){alert('❌ '+e.message)}
+})
+</script>
+</body>
+</html>
