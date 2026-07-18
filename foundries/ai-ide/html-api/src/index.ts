@@ -41,17 +41,9 @@ const cellRunControllers = new Map<string, AbortController>()
 // ── 意図的にキャンセルされたセル（stop → saveSession で status='cancelled' にする）──
 const intentionallyCancelled = new Set<string>()
 
-// ── SSE ブロードキャスト管理（ワークフローID → 購読者コントローラーのSet）──
-const workflowSubscribers = new Map<string, Set<ReadableStreamDefaultController>>()
-
-function broadcastToWorkflow(workflowId: string, data: any) {
-  const subs = workflowSubscribers.get(workflowId)
-  if (!subs || subs.size === 0) return
-  const enc = new TextEncoder()
-  const payload = `event: session\ndata: ${JSON.stringify(data)}\n\n`
-  for (const ctl of subs) {
-    try { ctl.enqueue(enc.encode(payload)) } catch { subs.delete(ctl) }
-  }
+// ── SSE は廃止（別タブ同期は今後再設計）──
+function broadcastToWorkflow(_workflowId: string, _data: any) {
+  // 現在は何もしない（呼び出し元コードは維持）
 }
 
 // ═══════════════════════════════════════════
@@ -236,36 +228,7 @@ app.put('/api/workflows/:id/session', async (c) => {
   }
 })
 
-// ── ワークフローセッションのSSEストリーム（リアルタイム同期用）──
-app.get('/api/workflows/:id/stream', async (c) => {
-  const rawId = c.req.param('id')
-  const id = sanitizeId(rawId)
-
-  const stream = new ReadableStream({
-    start(controller) {
-      if (!workflowSubscribers.has(id)) workflowSubscribers.set(id, new Set())
-      workflowSubscribers.get(id)!.add(controller)
-      // 接続直後に現在のセッション状態を送信（初期化）
-      try {
-        const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
-        if (existsSync(sessPath)) {
-          const session = JSON.parse(readFileSync(sessPath, 'utf-8'))
-          const enc = new TextEncoder()
-          controller.enqueue(enc.encode(`event: session\ndata: ${JSON.stringify(session)}\n\n`))
-        }
-      } catch {}
-    },
-    cancel() {
-      // 切断時に購読者リストから削除
-      const subs = workflowSubscribers.get(id)
-      if (subs) subs.delete(controller)
-    },
-  })
-
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
-  })
-})
+// ── ワークフローセッション（SSE ストリームは廃止）──
 
 // ═══════════════════════════════════════════
 // Hermes Chat APIs
@@ -722,13 +685,23 @@ app.post('/api/workflows/:id/run', async (c) => {
           if (!sessionSaved) saveSession()
           if (pumpResolve) pumpResolve()
         })
+        // 全体実行タイムアウト（5分後に強制終了）
+        const runTimeout = setTimeout(() => {
+          if (!sessionSaved) {
+            pollingStopped = true
+            saveSession()
+          }
+        }, 5 * 60 * 1000)
+        pumpDone.finally(() => clearTimeout(runTimeout))
       },
       cancel() {
         // ブラウザ切断: pump 完了を待って保存（タイムアウト付き）
+        // pollPipelineFile が永遠に戻らないケース対策としてタイムアウトを即座に設定
+        const cancelTimeout = setTimeout(() => {
+          pollingStopped = true
+          if (!sessionSaved) saveSession()
+        }, 30000)
         pollPipelineFile().then(() => {
-          const cancelTimeout = setTimeout(() => {
-            if (!sessionSaved) saveSession()
-          }, 30000)
           pumpDone.then(() => {
             clearTimeout(cancelTimeout)
             if (!sessionSaved) saveSession()
@@ -744,6 +717,15 @@ app.post('/api/workflows/:id/run', async (c) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[api/workflows/:id/run] Error:', msg)
+    // エラー時もセッションの実行状態を確実に解除
+    const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+    try {
+      const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+      if (existing.cell_running) existing.cell_running[cellId] = false
+      if (existing.status === 'running') existing.status = 'error'
+      writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+      broadcastToWorkflow(id, existing)
+    } catch {}
     return c.json({ ok: false, error: msg }, 500)
   }
 })
@@ -862,7 +844,6 @@ console.log(`[html-api] ✅ POST /api/hermes/chat/stream       (text SSE)`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stream-json  (JSON SSE, output 必須)`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stop         (cancel, body: { run_id })`)
 console.log(`[html-api] ✅ GET/POST /api/workflows            (CRUD)`)
-console.log(`[html-api] ✅ GET /api/workflows/:id/stream      (SSE broadcast)`)
 console.log(`[html-api] ✅ GET/PUT/DELETE /api/workflows/:id  (CRUD)`)
 console.log(`[html-api] ✅ POST /api/workflows/:id/run          (SSE stream-json, cell execution)`)
 console.log(`[html-api] ✅ POST /api/workflows/:id/stop         (stop cell execution)`)
