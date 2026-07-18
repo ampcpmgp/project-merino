@@ -38,6 +38,8 @@ mkdirSync(PIPELINE_DIR, { recursive: true })
 const activeRuns = new Map<string, AbortController>()
 // ── セル実行管理（workflowId:cellId → AbortController）──
 const cellRunControllers = new Map<string, AbortController>()
+// ── 意図的にキャンセルされたセル（stop → saveSession で status='cancelled' にする）──
+const intentionallyCancelled = new Set<string>()
 
 // ── SSE ブロードキャスト管理（ワークフローID → 購読者コントローラーのSet）──
 const workflowSubscribers = new Map<string, Set<ReadableStreamDefaultController>>()
@@ -566,12 +568,28 @@ app.post('/api/workflows/:id/run', async (c) => {
         const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
         existing.hermes_session_id = sid
         existing.last_cell_index = cell_index
-        existing.status = resultContent ? 'completed' : 'error'
-        if (!existing.cells) existing.cells = {}
-        existing.cells[cellId] = {
-          thinking: thinkingBuf.slice(-2000),
-          output: resultContent,
-          updated_at: new Date().toISOString(),
+        // 意図的キャンセルかどうか
+        const ctlKey = `${id}:${cellId}`
+        const wasCancelled = intentionallyCancelled.has(ctlKey)
+        if (wasCancelled) {
+          existing.status = 'cancelled'
+          intentionallyCancelled.delete(ctlKey)
+          // キャンセルメッセージを thinking に追加（既存の思考を残して追記）
+          const cancelMsg = `\n\n⏹ ${new Date().toLocaleTimeString()} キャンセル`
+          // cell データがなければ作る
+          if (!existing.cells) existing.cells = {}
+          if (!existing.cells[cellId]) existing.cells[cellId] = {} as any
+          existing.cells[cellId].thinking = (thinkingBuf || (existing.cells[cellId] as any)?.thinking || '') + cancelMsg
+          existing.cells[cellId].output = null
+          existing.cells[cellId].updated_at = new Date().toISOString()
+        } else {
+          existing.status = resultContent ? 'completed' : 'error'
+          if (!existing.cells) existing.cells = {}
+          existing.cells[cellId] = {
+            thinking: thinkingBuf.slice(-2000),
+            output: resultContent,
+            updated_at: new Date().toISOString(),
+          }
         }
         // 実行完了: cell_running を解除
         if (existing.cell_running) existing.cell_running[cellId] = false
@@ -745,16 +763,23 @@ app.post('/api/workflows/:id/stop', async (c) => {
       } catch { return 'cell-' + (cell_index + 1) }
     })()
     const ctlKey = `${id}:${cellId}`
+    // saveSession が status='cancelled' で保存されるようフラグを立ててから abort
+    intentionallyCancelled.add(ctlKey)
     const ctl = cellRunControllers.get(ctlKey)
     if (ctl) {
       ctl.abort()
       cellRunControllers.delete(ctlKey)
     } else {
-      // コントローラーがない場合もセッションの実行状態をリセット
+      // コントローラーがない場合もセッションの実行状態をリセット（cancelled で保存）
       try {
         const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
         if (existing.cell_running) existing.cell_running[cellId] = false
-        existing.status = 'stopped'
+        existing.status = 'cancelled'
+        if (!existing.cells) existing.cells = {}
+        if (!existing.cells[cellId]) existing.cells[cellId] = {} as any
+        existing.cells[cellId].thinking = ((existing.cells[cellId] as any)?.thinking || '') + `\n\n⏹ ${new Date().toLocaleTimeString()} キャンセル`
+        existing.cells[cellId].output = null
+        existing.cells[cellId].updated_at = new Date().toISOString()
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
         broadcastToWorkflow(id, existing)
       } catch {}
