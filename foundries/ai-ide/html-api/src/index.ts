@@ -618,6 +618,8 @@ app.post('/api/workflows/:id/run', async (c) => {
       start(controller) {
         const reader = apiRes.body!.getReader()
         const decoder = new TextDecoder()
+        let retryCount = 0
+        const MAX_RETRIES = 5
 
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
@@ -678,8 +680,15 @@ app.post('/api/workflows/:id/run', async (c) => {
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') return
-            console.error('[run] pipe error:', err)
-            // エラー後も pump 継続（cancel 後も Hermes は動いている）
+            retryCount++
+            if (retryCount >= MAX_RETRIES) {
+              console.error('[run] max retries reached, saving session')
+              pollingStopped = true
+              if (!sessionSaved) saveSession()
+              if (pumpResolve) pumpResolve()
+              return
+            }
+            console.error('[run] pipe error (retry', retryCount, '/5):', err)
             return pump()
           })
         }
@@ -691,9 +700,13 @@ app.post('/api/workflows/:id/run', async (c) => {
         })
       },
       cancel() {
-        // ブラウザ切断: pump 完了（thinking 蓄積）を待ってから保存
+        // ブラウザ切断: pump 完了を待って保存（タイムアウト付き）
         pollPipelineFile().then(() => {
+          const cancelTimeout = setTimeout(() => {
+            if (!sessionSaved) saveSession()
+          }, 30000)
           pumpDone.then(() => {
+            clearTimeout(cancelTimeout)
             if (!sessionSaved) saveSession()
             else if (resultContent) saveSession(true)
           })
