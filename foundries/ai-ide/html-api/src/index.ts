@@ -20,8 +20,8 @@ const AUTH_HEADERS = {
 const app = new Hono()
 
 // ── Paths ──
-const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || './workflows'
-const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || './ai-workflows'
+const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows/workflows'
+const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows'
 
 // ── ID サニタイズ（パストラバーサル防止）──
 function sanitizeId(id: string): string {
@@ -36,6 +36,19 @@ mkdirSync(PIPELINE_DIR, { recursive: true })
 
 // ── アクティブなストリーム管理（run_id → AbortController）──
 const activeRuns = new Map<string, AbortController>()
+
+// ── SSE ブロードキャスト管理（ワークフローID → 購読者コントローラーのSet）──
+const workflowSubscribers = new Map<string, Set<ReadableStreamDefaultController>>()
+
+function broadcastToWorkflow(workflowId: string, data: any) {
+  const subs = workflowSubscribers.get(workflowId)
+  if (!subs || subs.size === 0) return
+  const enc = new TextEncoder()
+  const payload = `event: session\ndata: ${JSON.stringify(data)}\n\n`
+  for (const ctl of subs) {
+    try { ctl.enqueue(enc.encode(payload)) } catch { subs.delete(ctl) }
+  }
+}
 
 // ═══════════════════════════════════════════
 // Workflows API
@@ -115,7 +128,7 @@ app.post('/api/workflows', async (c) => {
       hermes_session_id: null,
       last_cell_index: null,
       status: 'idle',
-      cells: {},
+      results: {},
     }, null, 2))
 
     return c.json({ ok: true, workflow: wf })
@@ -211,11 +224,43 @@ app.put('/api/workflows/:id/session', async (c) => {
     const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
     const merged = { ...existing, ...updates }
     writeFileSync(sessPath, JSON.stringify(merged, null, 2))
+    broadcastToWorkflow(id, merged)  // 別タブにセッション更新を通知
     return c.json({ ok: true, session: merged })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     return c.json({ ok: false, error: msg }, 500)
   }
+})
+
+// ── ワークフローセッションのSSEストリーム（リアルタイム同期用）──
+app.get('/api/workflows/:id/stream', async (c) => {
+  const rawId = c.req.param('id')
+  const id = sanitizeId(rawId)
+
+  const stream = new ReadableStream({
+    start(controller) {
+      if (!workflowSubscribers.has(id)) workflowSubscribers.set(id, new Set())
+      workflowSubscribers.get(id)!.add(controller)
+      // 接続直後に現在のセッション状態を送信（初期化）
+      try {
+        const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+        if (existsSync(sessPath)) {
+          const session = JSON.parse(readFileSync(sessPath, 'utf-8'))
+          const enc = new TextEncoder()
+          controller.enqueue(enc.encode(`event: session\ndata: ${JSON.stringify(session)}\n\n`))
+        }
+      } catch {}
+    },
+    cancel() {
+      // 切断時に購読者リストから削除
+      const subs = workflowSubscribers.get(id)
+      if (subs) subs.delete(controller)
+    },
+  })
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
+  })
 })
 
 // ═══════════════════════════════════════════
@@ -502,6 +547,7 @@ app.post('/api/workflows/:id/run', async (c) => {
         existing.cell_running[cellId] = true
         existing.thinking = ''  // 前回の思考をクリア
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)  // 別タブに実行開始を通知
       } catch (e) {}
     }
     initSession()
@@ -523,6 +569,7 @@ app.post('/api/workflows/:id/run', async (c) => {
         // 実行完了: cell_running を解除
         if (existing.cell_running) existing.cell_running[cellId] = false
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)  // 別タブに実行完了を通知
         if (resultContent) sessionSaved = true
       } catch (e) {
         console.error('[run] saveSession error:', e)
@@ -538,6 +585,7 @@ app.post('/api/workflows/:id/run', async (c) => {
         // cells は触らない（output を保持）
         existing.thinking = thinkingBuf.slice(-2000)
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)  // 別タブに思考途中経過を通知
       } catch (e) {}
     }
     // パイプラインファイルの完了を待つ（cancel / 切断時用、タイムアウト無し）
@@ -732,5 +780,6 @@ console.log(`[html-api] ✅ POST /api/hermes/chat/stream       (text SSE)`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stream-json  (JSON SSE, output 必須)`)
 console.log(`[html-api] ✅ POST /api/hermes/chat/stop         (cancel, body: { run_id })`)
 console.log(`[html-api] ✅ GET/POST /api/workflows            (CRUD)`)
+console.log(`[html-api] ✅ GET /api/workflows/:id/stream      (SSE broadcast)`)
 console.log(`[html-api] ✅ GET/PUT/DELETE /api/workflows/:id  (CRUD)`)
 console.log(`[html-api] ✅ GET/PUT /api/workflows/:id/session (session state)`)
