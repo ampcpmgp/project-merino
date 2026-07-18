@@ -544,6 +544,8 @@ app.post('/api/workflows/:id/run', async (c) => {
         existing.status = 'running'
         existing.last_cell_index = cell_index
         if (!existing.cell_running) existing.cell_running = {}
+        // 他のセルの実行中状態をクリア（前回の実行が異常終了した場合のゴミ対策）
+        for (const key of Object.keys(existing.cell_running)) existing.cell_running[key] = false
         existing.cell_running[cellId] = true
         existing.thinking = ''  // 前回の思考をクリア
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
