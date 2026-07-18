@@ -20,8 +20,8 @@ const AUTH_HEADERS = {
 const app = new Hono()
 
 // ── Paths ──
-const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || './workflows'
-const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || './ai-workflows'
+const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows/workflows'
+const AI_WORKFLOWS_DIR = process.env.AI_WORKFLOWS_DIR || '/workspace/private/html-app/ai-workflows'
 
 // ── ID サニタイズ（パストラバーサル防止）──
 function sanitizeId(id: string): string {
@@ -36,6 +36,15 @@ mkdirSync(PIPELINE_DIR, { recursive: true })
 
 // ── アクティブなストリーム管理（run_id → AbortController）──
 const activeRuns = new Map<string, AbortController>()
+// ── セル実行管理（workflowId:cellId → AbortController）──
+const cellRunControllers = new Map<string, AbortController>()
+// ── 意図的にキャンセルされたセル（stop → saveSession で status='cancelled' にする）──
+const intentionallyCancelled = new Set<string>()
+
+// ── SSE は廃止（別タブ同期は今後再設計）──
+function broadcastToWorkflow(_workflowId: string, _data: any) {
+  // 現在は何もしない（呼び出し元コードは維持）
+}
 
 // ═══════════════════════════════════════════
 // Workflows API
@@ -115,7 +124,7 @@ app.post('/api/workflows', async (c) => {
       hermes_session_id: null,
       last_cell_index: null,
       status: 'idle',
-      cells: {},
+      results: {},
     }, null, 2))
 
     return c.json({ ok: true, workflow: wf })
@@ -211,12 +220,15 @@ app.put('/api/workflows/:id/session', async (c) => {
     const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
     const merged = { ...existing, ...updates }
     writeFileSync(sessPath, JSON.stringify(merged, null, 2))
+    broadcastToWorkflow(id, merged)  // 別タブにセッション更新を通知
     return c.json({ ok: true, session: merged })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     return c.json({ ok: false, error: msg }, 500)
   }
 })
+
+// ── ワークフローセッション（SSE ストリームは廃止）──
 
 // ═══════════════════════════════════════════
 // Hermes Chat APIs
@@ -473,6 +485,8 @@ app.post('/api/workflows/:id/run', async (c) => {
     const fullMessage = `${system}\n\n${inp.prompt || ''}`
 
     const abortCtl = new AbortController()
+    const ctlKey = `${id}:${cellId}`
+    cellRunControllers.set(ctlKey, abortCtl)
     const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
       method: 'POST', headers: AUTH_HEADERS,
       body: JSON.stringify({ message: fullMessage }),
@@ -480,7 +494,8 @@ app.post('/api/workflows/:id/run', async (c) => {
     })
     if (!apiRes.ok || !apiRes.body) {
       const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
-      return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
+      cellRunControllers.delete(ctlKey)
+      return c.json({ ok: false, error: err }, 502)
     }
 
     let runIdBuf = ''
@@ -499,9 +514,12 @@ app.post('/api/workflows/:id/run', async (c) => {
         existing.status = 'running'
         existing.last_cell_index = cell_index
         if (!existing.cell_running) existing.cell_running = {}
+        // 他のセルの実行中状態をクリア（前回の実行が異常終了した場合のゴミ対策）
+        for (const key of Object.keys(existing.cell_running)) existing.cell_running[key] = false
         existing.cell_running[cellId] = true
         existing.thinking = ''  // 前回の思考をクリア
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)  // 別タブに実行開始を通知
       } catch (e) {}
     }
     initSession()
@@ -513,16 +531,33 @@ app.post('/api/workflows/:id/run', async (c) => {
         const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
         existing.hermes_session_id = sid
         existing.last_cell_index = cell_index
-        existing.status = resultContent ? 'completed' : 'error'
-        if (!existing.cells) existing.cells = {}
-        existing.cells[cellId] = {
-          thinking: thinkingBuf.slice(-2000),
-          output: resultContent,
-          updated_at: new Date().toISOString(),
+        // 意図的キャンセルかどうか
+        const ctlKey = `${id}:${cellId}`
+        const wasCancelled = intentionallyCancelled.has(ctlKey)
+        if (wasCancelled) {
+          existing.status = 'cancelled'
+          intentionallyCancelled.delete(ctlKey)
+          // キャンセルメッセージを thinking に追加（既存の思考を残して追記）
+          const cancelMsg = `\n\n⏹ ${new Date().toLocaleTimeString()} キャンセル`
+          // cell データがなければ作る
+          if (!existing.cells) existing.cells = {}
+          if (!existing.cells[cellId]) existing.cells[cellId] = {} as any
+          existing.cells[cellId].thinking = (thinkingBuf || (existing.cells[cellId] as any)?.thinking || '') + cancelMsg
+          existing.cells[cellId].output = null
+          existing.cells[cellId].updated_at = new Date().toISOString()
+        } else {
+          existing.status = resultContent ? 'completed' : 'error'
+          if (!existing.cells) existing.cells = {}
+          existing.cells[cellId] = {
+            thinking: thinkingBuf.slice(-2000),
+            output: resultContent,
+            updated_at: new Date().toISOString(),
+          }
         }
         // 実行完了: cell_running を解除
         if (existing.cell_running) existing.cell_running[cellId] = false
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)  // 別タブに実行完了を通知
         if (resultContent) sessionSaved = true
       } catch (e) {
         console.error('[run] saveSession error:', e)
@@ -538,6 +573,7 @@ app.post('/api/workflows/:id/run', async (c) => {
         // cells は触らない（output を保持）
         existing.thinking = thinkingBuf.slice(-2000)
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)  // 別タブに思考途中経過を通知
       } catch (e) {}
     }
     // パイプラインファイルの完了を待つ（cancel / 切断時用、タイムアウト無し）
@@ -568,6 +604,8 @@ app.post('/api/workflows/:id/run', async (c) => {
       start(controller) {
         const reader = apiRes.body!.getReader()
         const decoder = new TextDecoder()
+        let retryCount = 0
+        const MAX_RETRIES = 5
 
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
@@ -628,22 +666,44 @@ app.post('/api/workflows/:id/run', async (c) => {
             return pump()
           }).catch((err) => {
             if (err.name === 'AbortError') return
-            console.error('[run] pipe error:', err)
-            // エラー後も pump 継続（cancel 後も Hermes は動いている）
+            retryCount++
+            if (retryCount >= MAX_RETRIES) {
+              console.error('[run] max retries reached, saving session')
+              pollingStopped = true
+              if (!sessionSaved) saveSession()
+              if (pumpResolve) pumpResolve()
+              return
+            }
+            console.error('[run] pipe error (retry', retryCount, '/5):', err)
             return pump()
           })
         }
         pump().finally(() => {
           const rid = (abortCtl as any).runId
           if (rid) activeRuns.delete(rid)
+          cellRunControllers.delete(ctlKey)
           if (!sessionSaved) saveSession()
           if (pumpResolve) pumpResolve()
         })
+        // 全体実行タイムアウト（5分後に強制終了）
+        const runTimeout = setTimeout(() => {
+          if (!sessionSaved) {
+            pollingStopped = true
+            saveSession()
+          }
+        }, 5 * 60 * 1000)
+        pumpDone.finally(() => clearTimeout(runTimeout))
       },
       cancel() {
-        // ブラウザ切断: pump 完了（thinking 蓄積）を待ってから保存
+        // ブラウザ切断: pump 完了を待って保存（タイムアウト付き）
+        // pollPipelineFile が永遠に戻らないケース対策としてタイムアウトを即座に設定
+        const cancelTimeout = setTimeout(() => {
+          pollingStopped = true
+          if (!sessionSaved) saveSession()
+        }, 30000)
         pollPipelineFile().then(() => {
           pumpDone.then(() => {
+            clearTimeout(cancelTimeout)
             if (!sessionSaved) saveSession()
             else if (resultContent) saveSession(true)
           })
@@ -657,7 +717,59 @@ app.post('/api/workflows/:id/run', async (c) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[api/workflows/:id/run] Error:', msg)
+    // エラー時もセッションの実行状態を確実に解除
+    const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+    try {
+      const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+      if (existing.cell_running) existing.cell_running[cellId] = false
+      if (existing.status === 'running') existing.status = 'error'
+      writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+      broadcastToWorkflow(id, existing)
+    } catch {}
     return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── セル実行停止 ──
+app.post('/api/workflows/:id/stop', async (c) => {
+  const id = c.req.param('id')
+  try {
+    const { cell_index } = await c.req.json()
+    const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+    const cellId = (() => {
+      const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
+      try {
+        const wf = JSON.parse(readFileSync(wfPath, 'utf-8'))
+        const cell = wf.cells?.[cell_index]
+        return cell?.id || 'cell-' + (cell_index + 1)
+      } catch { return 'cell-' + (cell_index + 1) }
+    })()
+    const ctlKey = `${id}:${cellId}`
+    // saveSession が status='cancelled' で保存されるようフラグを立ててから abort
+    intentionallyCancelled.add(ctlKey)
+    const ctl = cellRunControllers.get(ctlKey)
+    if (ctl) {
+      ctl.abort()
+      cellRunControllers.delete(ctlKey)
+    } else {
+      // コントローラーがない場合もセッションの実行状態をリセット（cancelled で保存）
+      try {
+        const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+        if (existing.cell_running) existing.cell_running[cellId] = false
+        existing.status = 'cancelled'
+        if (!existing.cells) existing.cells = {}
+        if (!existing.cells[cellId]) existing.cells[cellId] = {} as any
+        existing.cells[cellId].thinking = ((existing.cells[cellId] as any)?.thinking || '') + `\n\n⏹ ${new Date().toLocaleTimeString()} キャンセル`
+        existing.cells[cellId].output = null
+        existing.cells[cellId].updated_at = new Date().toISOString()
+        writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)
+      } catch {}
+    }
+    return c.json({ ok: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 400)
   }
 })
 
@@ -733,4 +845,6 @@ console.log(`[html-api] ✅ POST /api/hermes/chat/stream-json  (JSON SSE, output
 console.log(`[html-api] ✅ POST /api/hermes/chat/stop         (cancel, body: { run_id })`)
 console.log(`[html-api] ✅ GET/POST /api/workflows            (CRUD)`)
 console.log(`[html-api] ✅ GET/PUT/DELETE /api/workflows/:id  (CRUD)`)
+console.log(`[html-api] ✅ POST /api/workflows/:id/run          (SSE stream-json, cell execution)`)
+console.log(`[html-api] ✅ POST /api/workflows/:id/stop         (stop cell execution)`)
 console.log(`[html-api] ✅ GET/PUT /api/workflows/:id/session (session state)`)
