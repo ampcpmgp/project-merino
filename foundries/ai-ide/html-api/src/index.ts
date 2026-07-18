@@ -518,14 +518,24 @@ app.post('/api/workflows/:id/run', async (c) => {
     const fullMessage = `${system}\n\n${inp.prompt || ''}`
 
     const abortCtl = new AbortController()
-    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
-      method: 'POST', headers: AUTH_HEADERS,
-      body: JSON.stringify({ message: fullMessage }),
-      signal: abortCtl.signal,
-    })
-    if (!apiRes.ok || !apiRes.body) {
-      const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
-      return c.json({ ok: false, error: `API error (${apiRes.status})` }, 502)
+    // Hermes API に接続（一時的な障害に備えて最大2回リトライ）
+    let apiRes: Response | null = null
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
+        method: 'POST', headers: AUTH_HEADERS,
+        body: JSON.stringify({ message: fullMessage }),
+        signal: abortCtl.signal,
+      })
+      if (apiRes.ok && apiRes.body) break
+      if (attempt === 1) {
+        console.warn(`[run] Hermes API retry (attempt ${attempt}/2): ${apiRes.status}`)
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    }
+    if (!apiRes || !apiRes.ok || !apiRes.body) {
+      const err = apiRes?.status ? await apiRes.text().catch(() => '') : 'connection failed'
+      // 2回失敗しても initSession は未実行なので cell_running は汚れない
+      return c.json({ ok: false, error: `Hermes API error: ${err}` }, 502)
     }
 
     let runIdBuf = ''
