@@ -36,6 +36,8 @@ mkdirSync(PIPELINE_DIR, { recursive: true })
 
 // ── アクティブなストリーム管理（run_id → AbortController）──
 const activeRuns = new Map<string, AbortController>()
+// ── セル実行管理（workflowId:cellId → AbortController）──
+const cellRunControllers = new Map<string, AbortController>()
 
 // ── SSE ブロードキャスト管理（ワークフローID → 購読者コントローラーのSet）──
 const workflowSubscribers = new Map<string, Set<ReadableStreamDefaultController>>()
@@ -518,24 +520,17 @@ app.post('/api/workflows/:id/run', async (c) => {
     const fullMessage = `${system}\n\n${inp.prompt || ''}`
 
     const abortCtl = new AbortController()
-    // Hermes API に接続（一時的な障害に備えて最大2回リトライ）
-    let apiRes: Response | null = null
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
-        method: 'POST', headers: AUTH_HEADERS,
-        body: JSON.stringify({ message: fullMessage }),
-        signal: abortCtl.signal,
-      })
-      if (apiRes.ok && apiRes.body) break
-      if (attempt === 1) {
-        console.warn(`[run] Hermes API retry (attempt ${attempt}/2): ${apiRes.status}`)
-        await new Promise(r => setTimeout(r, 2000))
-      }
-    }
-    if (!apiRes || !apiRes.ok || !apiRes.body) {
-      const err = apiRes?.status ? await apiRes.text().catch(() => '') : 'connection failed'
-      // 2回失敗しても initSession は未実行なので cell_running は汚れない
-      return c.json({ ok: false, error: `Hermes API error: ${err}` }, 502)
+    const ctlKey = `${id}:${cellId}`
+    cellRunControllers.set(ctlKey, abortCtl)
+    const apiRes = await fetch(`${HERMES_API}/api/sessions/${sid}/chat/stream`, {
+      method: 'POST', headers: AUTH_HEADERS,
+      body: JSON.stringify({ message: fullMessage }),
+      signal: abortCtl.signal,
+    })
+    if (!apiRes.ok || !apiRes.body) {
+      const err = apiRes.status ? await apiRes.text().catch(() => '') : 'connection failed'
+      cellRunControllers.delete(ctlKey)
+      return c.json({ ok: false, error: err }, 502)
     }
 
     let runIdBuf = ''
@@ -705,6 +700,7 @@ app.post('/api/workflows/:id/run', async (c) => {
         pump().finally(() => {
           const rid = (abortCtl as any).runId
           if (rid) activeRuns.delete(rid)
+          cellRunControllers.delete(ctlKey)
           if (!sessionSaved) saveSession()
           if (pumpResolve) pumpResolve()
         })
@@ -731,6 +727,42 @@ app.post('/api/workflows/:id/run', async (c) => {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[api/workflows/:id/run] Error:', msg)
     return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── セル実行停止 ──
+app.post('/api/workflows/:id/stop', async (c) => {
+  const id = c.req.param('id')
+  try {
+    const { cell_index } = await c.req.json()
+    const sessPath = join(WORKFLOWS_DIR, id, 'last-session.json')
+    const cellId = (() => {
+      const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
+      try {
+        const wf = JSON.parse(readFileSync(wfPath, 'utf-8'))
+        const cell = wf.cells?.[cell_index]
+        return cell?.id || 'cell-' + (cell_index + 1)
+      } catch { return 'cell-' + (cell_index + 1) }
+    })()
+    const ctlKey = `${id}:${cellId}`
+    const ctl = cellRunControllers.get(ctlKey)
+    if (ctl) {
+      ctl.abort()
+      cellRunControllers.delete(ctlKey)
+    } else {
+      // コントローラーがない場合もセッションの実行状態をリセット
+      try {
+        const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+        if (existing.cell_running) existing.cell_running[cellId] = false
+        existing.status = 'stopped'
+        writeFileSync(sessPath, JSON.stringify(existing, null, 2))
+        broadcastToWorkflow(id, existing)
+      } catch {}
+    }
+    return c.json({ ok: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 400)
   }
 })
 
@@ -807,4 +839,6 @@ console.log(`[html-api] ✅ POST /api/hermes/chat/stop         (cancel, body: { 
 console.log(`[html-api] ✅ GET/POST /api/workflows            (CRUD)`)
 console.log(`[html-api] ✅ GET /api/workflows/:id/stream      (SSE broadcast)`)
 console.log(`[html-api] ✅ GET/PUT/DELETE /api/workflows/:id  (CRUD)`)
+console.log(`[html-api] ✅ POST /api/workflows/:id/run          (SSE stream-json, cell execution)`)
+console.log(`[html-api] ✅ POST /api/workflows/:id/stop         (stop cell execution)`)
 console.log(`[html-api] ✅ GET/PUT /api/workflows/:id/session (session state)`)
