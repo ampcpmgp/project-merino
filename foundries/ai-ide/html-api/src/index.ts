@@ -898,52 +898,6 @@ app.get('/api/read', async (c) => {
 // ── Ping ──
 app.get('/api/ping', (c) => c.json({ ok: true }))
 
-// ── TypeScript 実行 ──
-app.post('/api/workflows/:id/exec-js', async (c) => {
-  try {
-    const id = sanitizeId(c.req.param('id'))
-    const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
-    if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
-    const { code, input } = await c.req.json()
-    if (!code) return c.json({ ok: false, error: 'Code is empty' }, 400)
-
-    // tmp ファイルに出力
-    const tmpFile = join('/tmp', `ts-exec-${id}-${Date.now()}.mts`)
-    const wrapped = `
-const __input = ${JSON.stringify(input || {})};
-${code}
-`
-    writeFileSync(tmpFile, wrapped)
-    
-    const proc = Bun.spawn(['bun', 'run', tmpFile], {
-      stdout: 'pipe',
-      stderr: 'pipe',
-      env: { ...process.env, NODE_NO_WARNINGS: '1' },
-      timeout: 30000,
-    })
-    const stdout = await new Response(proc.stdout).text()
-    const stderr = await new Response(proc.stderr).text()
-    const exitCode = await proc.exited
-
-    // cleanup
-    try { rmSync(tmpFile) } catch {}
-
-    if (exitCode !== 0) {
-      return c.json({ ok: false, error: stderr || `Exit code ${exitCode}`, stdout })
-    }
-    // stdout の最終行を JSON パース試行 → result
-    let result = null
-    const lines = stdout.trim().split('\n')
-    for (let i = lines.length - 1; i >= 0; i--) {
-      try { result = JSON.parse(lines[i]); break } catch {}
-    }
-    return c.json({ ok: true, result, stdout, stderr })
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return c.json({ ok: false, error: msg }, 500)
-  }
-})
-
 // ── SSE Error テスト ──
 app.get('/api/test/sse-error', async (c) => {
   const stream = new ReadableStream({
