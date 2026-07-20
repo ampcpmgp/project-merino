@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { serve } from 'bun'
+import { merge } from 'es-toolkit'
 import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 
@@ -307,7 +308,7 @@ app.put('/api/workflows/:id/session', async (c) => {
     const sessPath = join(dir, 'last-session.json')
     const updates = await c.req.json()
     const existing = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
-    const merged = { ...existing, ...updates }
+    const merged = merge(existing, updates)
     writeFileSync(sessPath, JSON.stringify(merged, null, 2))
     broadcastToWorkflow(id, merged)  // 別タブにセッション更新を通知
     return c.json({ ok: true, session: merged })
