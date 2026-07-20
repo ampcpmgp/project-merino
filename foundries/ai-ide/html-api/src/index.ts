@@ -167,10 +167,99 @@ app.put('/api/workflows/:id', async (c) => {
     if (updates.description !== undefined) wf.description = updates.description
     if (updates.cells !== undefined) wf.cells = updates.cells
     if (updates.status !== undefined) wf.status = updates.status
+    if (updates.globalVars !== undefined) wf.globalVars = updates.globalVars
     wf.updated_at = new Date().toISOString()
 
     writeFileSync(wfPath, JSON.stringify(wf, null, 2))
     return c.json({ ok: true, workflow: wf })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── バージョン保存 ──
+app.post('/api/workflows/:id/versions', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
+    const wfDir = join(WORKFLOWS_DIR, id)
+    const wfPath = join(wfDir, 'workflow.json')
+    if (!existsSync(wfPath)) return c.json({ ok: false, error: 'Not found' }, 404)
+    const { label } = await c.req.json()
+    const wf = JSON.parse(readFileSync(wfPath, 'utf-8'))
+    const versionsDir = join(wfDir, 'versions')
+    if (!existsSync(versionsDir)) mkdirSync(versionsDir, { recursive: true })
+    const ts = new Date().toISOString().replace(/[:.]/g, '-')
+    const vf = join(versionsDir, `${ts}.json`)
+    writeFileSync(vf, JSON.stringify({ ...wf, _versionLabel: label || '', _savedAt: new Date().toISOString() }, null, 2))
+    return c.json({ ok: true, version: ts })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── バージョン一覧 ──
+app.get('/api/workflows/:id/versions', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
+    const versionsDir = join(WORKFLOWS_DIR, id, 'versions')
+    if (!existsSync(versionsDir)) return c.json({ ok: true, versions: [] })
+    const files = readdirSync(versionsDir)
+      .filter(f => f.endsWith('.json'))
+      .sort()
+      .reverse()
+    const versions = files.map(f => {
+      const data = JSON.parse(readFileSync(join(versionsDir, f), 'utf-8'))
+      return {
+        id: f.replace(/\.json$/, ''),
+        filename: f,
+        label: data._versionLabel || '',
+        savedAt: data._savedAt || '',
+        cellCount: data.cells?.length || 0,
+      }
+    })
+    return c.json({ ok: true, versions })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── バージョン復元 ──
+app.post('/api/workflows/:id/versions/:vid/restore', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
+    const vid = c.req.param('vid')
+    const vf = join(WORKFLOWS_DIR, id, 'versions', `${vid}.json`)
+    if (!existsSync(vf)) return c.json({ ok: false, error: 'Version not found' }, 404)
+    const vdata = JSON.parse(readFileSync(vf, 'utf-8'))
+    // 復元：現在の workflow.json を上書き（_versionLabel, _savedAt は除去）
+    delete vdata._versionLabel
+    delete vdata._savedAt
+    vdata.updated_at = new Date().toISOString()
+    const wfPath = join(WORKFLOWS_DIR, id, 'workflow.json')
+    writeFileSync(wfPath, JSON.stringify(vdata, null, 2))
+    return c.json({ ok: true, workflow: vdata })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return c.json({ ok: false, error: msg }, 500)
+  }
+})
+
+// ── バージョン削除 ──
+app.delete('/api/workflows/:id/versions/:vid', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = sanitizeId(rawId)
+    const vid = c.req.param('vid')
+    const vf = join(WORKFLOWS_DIR, id, 'versions', `${vid}.json`)
+    if (!existsSync(vf)) return c.json({ ok: false, error: 'Version not found' }, 404)
+    rmSync(vf)
+    return c.json({ ok: true })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     return c.json({ ok: false, error: msg }, 500)
