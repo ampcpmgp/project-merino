@@ -648,7 +648,7 @@ app.post('/api/workflows/:id/run', async (c) => {
         if (existing.cell_running) existing.cell_running[cellId] = false
         writeFileSync(sessPath, JSON.stringify(existing, null, 2))
         broadcastToWorkflow(id, existing)  // 別タブに実行完了を通知
-        if (resultContent) sessionSaved = true
+        sessionSaved = true
       } catch (e) {
         console.error('[run] saveSession error:', e)
       }
@@ -794,8 +794,8 @@ app.post('/api/workflows/:id/run', async (c) => {
         pollPipelineFile().then(() => {
           pumpDone.then(() => {
             clearTimeout(cancelTimeout)
+            // 意図的キャンセル時は結果を保存しない（pump.finally() の saveSession で cancelled 確定済み）
             if (!sessionSaved) saveSession()
-            else if (resultContent) saveSession(true)
           })
         })
       },
@@ -839,8 +839,30 @@ app.post('/api/workflows/:id/stop', async (c) => {
     intentionallyCancelled.add(ctlKey)
     const ctl = cellRunControllers.get(ctlKey)
     if (ctl) {
+      // Hermes agent に停止を依頼（run_id を取得）
+      const rid = (ctl as any).runId
       ctl.abort()
       cellRunControllers.delete(ctlKey)
+      if (rid) {
+        // Hermes API の /v1/runs/{run_id}/stop で agent を確実に停止
+        fetch(`${HERMES_API}/v1/runs/${rid}/stop`, {
+          method: 'POST', headers: { 'Authorization': `Bearer ${HERMES_API_KEY}` },
+        }).catch(() => {})
+        // activeRuns からも削除
+        activeRuns.delete(rid)
+      }
+      // パイプライン出力ファイルを削除（エージェントが書き込んでも無視されるように）
+      try {
+        const sess = existsSync(sessPath) ? JSON.parse(readFileSync(sessPath, 'utf-8')) : {}
+        const sid = sess.hermes_session_id
+        if (sid) {
+          const safeId = sid.replace(/[^a-zA-Z0-9_-]/g, '_')
+          const pipelineFiles = readdirSync(PIPELINE_DIR).filter(f => f.startsWith(safeId))
+          for (const f of pipelineFiles) {
+            try { rmSync(join(PIPELINE_DIR, f), { force: true }) } catch {}
+          }
+        }
+      } catch (e) {}
     } else {
       // コントローラーがない場合もセッションの実行状態をリセット（cancelled で保存）
       try {
