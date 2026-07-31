@@ -22,8 +22,8 @@ fi
 # /workspace/private/documents/hermes-skills → /home/appuser/.hermes/skills のため
 # tar 復元でパーミッションが 700 にリセットされるため、毎ブート実行が必要
 echo "[setup-hermes] Fixing permissions for nginx skills viewer ..."
-chmod o+x /home/appuser /home/appuser/.hermes /home/appuser/.hermes/skills
-find /home/appuser/.hermes/skills -type d -exec chmod o+x {} +
+chmod o+rx /home/appuser/.hermes /home/appuser/.hermes/skills
+find /home/appuser/.hermes/skills -type d -exec chmod o+rx {} +
 find /home/appuser/.hermes/skills -type f -exec chmod o+r {} +
 
 echo "[setup-hermes] Done."
