@@ -18,11 +18,4 @@ if [ -f /home/appuser/.hermes/hermes-agent/venv/bin/python ]; then
     "$VENV_PYTHON" -m pip install faster-whisper numpy
 fi
 
-# nginx (www-data) が symlink 経由でスキルファイルを読めるようにする
-# tar 復元でパーミッションが 700 にリセットされるため、毎ブート実行が必要
-echo "[setup-hermes] Fixing permissions for nginx skills viewer ..."
-chmod o+rx /home/appuser/.hermes /home/appuser/.hermes/skills
-find /home/appuser/.hermes/skills -type d -exec chmod o+rx {} +
-find /home/appuser/.hermes/skills -type f -exec chmod o+r {} +
-
 echo "[setup-hermes] Done."
