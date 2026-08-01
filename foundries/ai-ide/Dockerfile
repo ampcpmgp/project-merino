@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx-extras \
     graphicsmagick \
     rsync \
+    rclone \
     inotify-tools \
     pv \
     ### Chromeの動作に必要なLinux共有ライブラリをインストール ここから ###
