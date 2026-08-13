@@ -117,7 +117,8 @@ RUN npm install -g \
 RUN pnpm add -g \
     @anthropic-ai/claude-code@2.1.107 \
     ccusage@18.0.10 \
-    opencode-ai@1.4.3
+    opencode-ai@1.4.3 \
+    vercel@59.0.0
 
 # Clean up build caches before installing Chrome (keep image size down)
 # Note: DO NOT move this after Chrome install, it will wipe puppeteer's browser binary
