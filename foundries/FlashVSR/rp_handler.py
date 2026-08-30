@@ -31,7 +31,7 @@ def upscale_video(video_path, scale=2, output_path=None):
         "--scale", str(scale),
         "--vae_model", "Wan2.1",
         "--attention_mode", "sdpa",  # flash-attn ビルド失敗時のフォールバック
-        "--models_dir", os.path.join(COMFYUI_DIR, "models/FlashVSR"),
+        "--models_dir", os.path.join(COMFYUI_DIR, "models"),
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
