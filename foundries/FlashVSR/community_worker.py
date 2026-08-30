@@ -46,7 +46,6 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 PROGRESS_INTERVAL = 60
 
 # 方式Cの閾値
-TARGET_WIDTH = 2160  # 最終出力幅
 PREPROCESS_MIN = 540  # 4xで2160pxになる最小幅（540×4=2160）
 PREPROCESS_MAX = 1080  # 2xで2160pxになる最小幅（1080×2=2160）
 
