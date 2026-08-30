@@ -2,7 +2,7 @@
 # 動画アップスケール用（FlashVSR + ComfyUI CLI）
 # ベース: RunPod公式 PyTorch CUDA イメージ
 
-FROM runpod/base:0.4.1-cuda12.4.0
+FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel
 
 # 環境変数
 ENV TERM=xterm \
