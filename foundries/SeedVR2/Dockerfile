@@ -41,19 +41,16 @@ RUN pip install flash_attn==2.5.9.post1 --no-build-isolation || echo "flash_attn
 # apex: 公式提供 whl (cp310 / torch 2.4.0 / cuda12.1)。python/torch整合を要確認。
 RUN pip install https://huggingface.co/ByteDance-Seed/SeedVR2-3B/resolve/main/apex-0.1-cp310-cp310-linux_x86_64.whl || echo "apex whl failed"
 
-# モデルダウンロード — 量子化版を優先 (VRAM節約・速度向上)
-# SeedVR2 は fp16 / fp8_e4m3fn / int8_convrot / NVFP4 / MXFP8 量子化がある。
-# RTX 4090(24GB) で 2160px を安全に処理するため、3B の FP8 と INT8 を両方DL。
-# モデルは ComfyUI 公式リポジトリ (Comfy-Org/SeedVR2) から。VAE は共通。
-# ※ サイズ節約のため fp16 は省略 (FP8/INT8 で十分)。
+# モデルダウンロード — **3B FP8 に確定**（量子化の品質・速度・VRAMの総合判断より）
+# SeedVR2-3B FP8 (e4m3fn): VRAM約3GB・fps ~0.49(1080p)・品質ほぼFP16同等 → AMANE長尺に最有力
+# INT8 は品質劣化リスクのため採用しない。FP8でOOMする場合は後述。
+# モデルは ComfyUI 公式リポジトリ (Comfy-Org/SeedVR2) から。VAE は共通(fp16)。
 RUN mkdir -p /models/seedvr2 /models/seedvr2_vae && \
-    echo "Downloading SeedVR2 3B FP8..." && \
+    echo "Downloading SeedVR2 3B FP8 (primary)..." && \
     wget -q https://huggingface.co/Comfy-Org/SeedVR2/resolve/main/diffusion_models/seedvr2_3b_fp8_e4m3fn.safetensors -O /models/seedvr2/seedvr2_3b_fp8_e4m3fn.safetensors && \
-    echo "Downloading SeedVR2 3B INT8..." && \
-    wget -q https://huggingface.co/Comfy-Org/SeedVR2/resolve/main/diffusion_models/seedvr2_3b_int8_convrot.safetensors -O /models/seedvr2/seedvr2_3b_int8_convrot.safetensors && \
-    echo "Downloading SeedVR2 VAE..." && \
+    echo "Downloading SeedVR2 VAE (fp16)..." && \
     wget -q https://huggingface.co/Comfy-Org/SeedVR2/resolve/main/vae/seedvr2_ema_vae_fp16.safetensors -O /models/seedvr2_vae/seedvr2_ema_vae_fp16.safetensors && \
-    echo "SeedVR2 models downloaded." || echo "model download failed (will retry at runtime)"
+    echo "SeedVR2 3B FP8 models downloaded." || echo "model download failed (will retry at runtime)"
 
 # 色補正 color_fix を公式位置へ (あれば)
 RUN mkdir -p projects/video_diffusion_sr && (cp color_fix.py projects/video_diffusion_sr/color_fix.py 2>/dev/null || echo "color_fix.py not in repo root")

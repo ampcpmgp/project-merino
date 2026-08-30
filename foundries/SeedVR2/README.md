@@ -62,4 +62,7 @@ SeedVR2 は **FP8 / INT8 / NVFP4(4bit) / MXFP8** の量子化版が存在する�
 
 ## VERSION
 
-- 0.0.1（仮）
+- 0.0.2（3B FP8 確定）
+  - モデルを **3B FP8 (e4m3fn)** に確定（INT8を除外）
+  - VAE は共通 fp16
+- 0.0.1（仮・FP8+INT8両方DL）
