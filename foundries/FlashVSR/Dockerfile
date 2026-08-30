@@ -1,8 +1,8 @@
 # FlashVSR RunPod Serverless Worker Dockerfile
 # 動画アップスケール用（FlashVSR + ComfyUI CLI）
-# ベース: RunPod公式 PyTorch CUDA イメージ
+# ベース: PyTorch公式 CUDA 12.8 イメージ（GPTSoVits foundry と同じ実績のあるベース）
 
-FROM runpod/base:0.4.1-cuda12.4.0
+FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel
 
 # 環境変数
 ENV TERM=xterm \
@@ -13,6 +13,9 @@ ENV TERM=xterm \
 RUN apt-get update && apt-get install -y \
     git wget git-lfs ffmpeg \
     && rm -rf /var/lib/apt/lists/*
+
+# RunPod Serverless SDK
+RUN pip install --no-cache-dir runpod
 
 # ComfyUI クローン
 WORKDIR /app
@@ -25,9 +28,10 @@ RUN git clone https://github.com/naxci1/ComfyUI-FlashVSR_Stable.git --depth 1
 
 # FlashVSR モデル ダウンロード（naxci1版が期待するファイル名）
 # 出典: https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1
+# nodes.py は base_dir/FlashVSR-v1.1/ 配下にモデルを期待する（model_path = base_dir + model）
 WORKDIR /app/ComfyUI/models
-RUN mkdir -p FlashVSR && \
-    cd FlashVSR && \
+RUN mkdir -p FlashVSR-v1.1 && \
+    cd FlashVSR-v1.1 && \
     wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/LQ_proj_in.ckpt && \
     wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/TCDecoder.ckpt && \
     wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/diffusion_pytorch_model_streaming_dmd.safetensors && \
