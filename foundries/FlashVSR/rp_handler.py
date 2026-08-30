@@ -32,6 +32,12 @@ def upscale_video(video_path, scale=2, output_path=None):
         "--vae_model", "Wan2.1",
         "--attention_mode", "sdpa",  # flash-attn ビルド失敗時のフォールバック
         "--models_dir", os.path.join(COMFYUI_DIR, "models"),
+        # OOM 対策: フレームチャンク + VAE/DiT タイル化（24GB Pro で 544x306 を安全に処理）
+        "--frame_chunk_size", "50",
+        "--tiled_vae",
+        "--tiled_dit",
+        "--tile_size", "256",
+        "--tile_overlap", "24",
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
