@@ -19,29 +19,40 @@ WORKDIR /app
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git --depth 1
 
 # FlashVSR カスタムノード インストール
+# CLI (cli_main.py) を含む naxci1/ComfyUI-FlashVSR_Stable を使用
 WORKDIR /app/ComfyUI/custom_nodes
-RUN git clone https://github.com/1038lab/ComfyUI-FlashVSR.git --depth 1
+RUN git clone https://github.com/naxci1/ComfyUI-FlashVSR_Stable.git --depth 1
 
-# FlashVSR モデル ダウンロード
+# FlashVSR モデル ダウンロード（naxci1版が期待するファイル名）
+# 出典: https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1
 WORKDIR /app/ComfyUI/models
 RUN mkdir -p FlashVSR && \
     cd FlashVSR && \
-    wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2_1-T2V-1_3B_FlashVSR_fp32.safetensors && \
-    wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2_1_FlashVSR_TCDecoder_fp32.safetensors && \
-    wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2_1_FlashVSR_LQ_proj_model_bf16.safetensors && \
-    wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2.1_VAE.safetensors && \
-    wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Prompt.safetensors
+    wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/LQ_proj_in.ckpt && \
+    wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/TCDecoder.ckpt && \
+    wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/diffusion_pytorch_model_streaming_dmd.safetensors && \
+    wget -q https://huggingface.co/lightx2v/Autoencoders/resolve/main/Wan2.1_VAE.pth
 
 # Python依存関係
 WORKDIR /app/ComfyUI
 RUN pip install --no-cache-dir -r requirements.txt
 
-# FlashVSR追加依存
+# FlashVSR追加依存（naxci1版 requirements.txt）
+# ※ flash-attn はCUDAビルドが必要で重いため、ビルド失敗時は
+#    --attention_mode sdpa にフォールバック可能（wan_video_dit.py は try/except で対応）
+WORKDIR /app/ComfyUI/custom_nodes/ComfyUI-FlashVSR_Stable
 RUN pip install --no-cache-dir \
     einops \
     safetensors \
-    imageio \
-    imageio-ffmpeg
+    tqdm \
+    pillow \
+    huggingface_hub \
+    psutil \
+    "opencv-python>=4.8.1.78" \
+    pyyaml \
+    sageattention \
+    triton \
+    || echo "flash-attn/sageattention のビルドに失敗。sdpaモードでフォールバックします"
 
 # handler.py コピー
 COPY handler.py /app/handler.py

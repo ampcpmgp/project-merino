@@ -17,21 +17,21 @@ git clone https://github.com/comfyanonymous/ComfyUI.git --depth 1
 
 echo "🔵 Installing FlashVSR custom node..."
 cd /root/ComfyUI/custom_nodes
-git clone https://github.com/1038lab/ComfyUI-FlashVSR.git --depth 1
+git clone https://github.com/naxci1/ComfyUI-FlashVSR_Stable.git --depth 1
 
 echo "🔵 Downloading FlashVSR models..."
 mkdir -p /root/ComfyUI/models/FlashVSR
 cd /root/ComfyUI/models/FlashVSR
-wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2_1-T2V-1_3B_FlashVSR_fp32.safetensors
-wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2_1_FlashVSR_TCDecoder_fp32.safetensors
-wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2_1_FlashVSR_LQ_proj_model_bf16.safetensors
-wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Wan2.1_VAE.safetensors
-wget -q https://huggingface.co/1038lab/FlashVSR/resolve/main/Prompt.safetensors
+wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/LQ_proj_in.ckpt
+wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/TCDecoder.ckpt
+wget -q https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1/resolve/main/diffusion_pytorch_model_streaming_dmd.safetensors
+wget -q https://huggingface.co/lightx2v/Autoencoders/resolve/main/Wan2.1_VAE.pth
 
 echo "🔵 Installing Python dependencies..."
 cd /root/ComfyUI
 pip install -r requirements.txt
-pip install einops safetensors imageio imageio-ffmpeg
+cd /root/ComfyUI/custom_nodes/ComfyUI-FlashVSR_Stable
+pip install einops safetensors tqdm pillow huggingface_hub psutil "opencv-python>=4.8.1.78" pyyaml sageattention triton || echo "flash-attn/sageattention のビルドに失敗。sdpaモードでフォールバックします"
 
 echo "✅ Setup complete. Launching ComfyUI..."
 cd /root/ComfyUI

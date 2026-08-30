@@ -20,12 +20,17 @@ def upscale_video(video_path, scale=2, output_path=None):
     if output_path is None:
         output_path = os.path.join(OUTPUT_DIR, f"upscaled_{int(time.time())}.mp4")
 
-    # FlashVSR Stable CLI を使用（naxci1/ComfyUI-FlashVSR_Stable の cli_main.py）
+    # naxci1/ComfyUI-FlashVSR_Stable の cli_main.py を使用
+    # 引数仕様: https://github.com/naxci1/ComfyUI-FlashVSR_Stable
     cmd = [
-        "python", os.path.join(COMFYUI_DIR, "custom_nodes/ComfyUI-FlashVSR/cli_main.py"),
+        "python", os.path.join(COMFYUI_DIR, "custom_nodes/ComfyUI-FlashVSR_Stable/cli_main.py"),
         "--input", video_path,
         "--output", output_path,
+        "--model", "FlashVSR-v1.1",
+        "--mode", "tiny",
         "--scale", str(scale),
+        "--vae_model", "Wan2.1",
+        "--attention_mode", "sdpa",  # flash-attn ビルド失敗時のフォールバック
         "--models_dir", os.path.join(COMFYUI_DIR, "models/FlashVSR"),
     ]
 

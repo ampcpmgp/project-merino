@@ -53,19 +53,17 @@ docker push ofuton/flashvsr:latest
 
 ## モデル
 
-HuggingFace: https://huggingface.co/1038lab/FlashVSR
+HuggingFace: https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1
 
 ```
 ComfyUI/models/FlashVSR/
-├── Wan2_1-T2V-1_3B_FlashVSR_fp32.safetensors
-├── Wan2_1_FlashVSR_TCDecoder_fp32.safetensors
-├── Wan2_1_FlashVSR_LQ_proj_model_bf16.safetensors
-├── Wan2.1_VAE.safetensors
-└── Prompt.safetensors
+├── LQ_proj_in.ckpt
+├── TCDecoder.ckpt
+├── diffusion_pytorch_model_streaming_dmd.safetensors
+└── Wan2.1_VAE.pth  (or auto-downloads)
 ```
 
 ## 参考
 
-- [ComfyUI-FlashVSR (1038lab)](https://github.com/1038lab/ComfyUI-FlashVSR)
-- [FlashVSR Stable (naxci1)](https://github.com/naxci1/ComfyUI-FlashVSR_Stable) — CLI版・VRAM最適化
-- [FlashVSR Model (HuggingFace)](https://huggingface.co/1038lab/FlashVSR)
+- [ComfyUI-FlashVSR_Stable (naxci1)](https://github.com/naxci1/ComfyUI-FlashVSR_Stable) — CLI版・VRAM最適化
+- [FlashVSR-v1.1 Model (HuggingFace)](https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1)
