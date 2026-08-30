@@ -1,5 +1,6 @@
-# FlashVSR RunPod Serverless Worker Dockerfile
+# FlashVSR RunPod Community Worker Dockerfile
 # 動画アップスケール用（FlashVSR + ComfyUI CLI）
+# 環境変数駆動・単発ワーカー（community_worker.py）
 # ベース: PyTorch公式 CUDA 12.8 イメージ（GPTSoVits foundry と同じ実績のあるベース）
 
 FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-devel
@@ -14,8 +15,8 @@ RUN apt-get update && apt-get install -y \
     git wget git-lfs ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# RunPod Serverless SDK
-RUN pip install --no-cache-dir runpod
+# R2一時認証情報（S3 SigV4 + session token）用の boto3
+RUN pip install --no-cache-dir boto3
 
 # ComfyUI クローン
 WORKDIR /app
@@ -61,9 +62,14 @@ RUN pip install --no-cache-dir \
 
 # handler.py コピー
 COPY handler.py /app/handler.py
-COPY rp_handler.py /app/rp_handler.py
+COPY community_worker.py /app/community_worker.py
 
 WORKDIR /app
 
-# RunPod Serverless エントリポイント
-CMD ["python", "-u", "/app/rp_handler.py"]
+# 環境変数駆動ワーカー（ジョブは環境変数で完全指定・1ジョブ処理して終了）
+# 起動例:
+#   docker run --gpus all -e JOB_ID=xxx -e INPUT_URL=https://... \
+#     -e R2_ENDPOINT=... -e R2_BUCKET=... -e R2_ACCESS_KEY=... \
+#     -e R2_SECRET_KEY=... -e R2_SESSION_TOKEN=... ofuton/flashvsr:0.0.7
+#   ※ SCALE 省略時は入力幅に応じて自動決定（方式C: <540→4x, 540-1080→4x, >1080→2x）
+CMD ["python", "-u", "/app/community_worker.py"]
