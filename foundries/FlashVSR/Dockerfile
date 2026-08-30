@@ -42,7 +42,8 @@ WORKDIR /app/ComfyUI
 RUN pip install --no-cache-dir -r requirements.txt
 
 # FlashVSR追加依存（naxci1版 requirements.txt）
-# ※ flash-attn はCUDAビルドが必要で重いため、ビルド失敗時は
+# ※ sageattention は sparse_sage_attention モードに必須（triton ベース・pip で導入可）
+#    flash-attn はCUDAビルドが必要で重いため、ビルド失敗時は
 #    --attention_mode sdpa にフォールバック可能（wan_video_dit.py は try/except で対応）
 WORKDIR /app/ComfyUI/custom_nodes/ComfyUI-FlashVSR_Stable
 RUN pip install --no-cache-dir \
@@ -54,9 +55,9 @@ RUN pip install --no-cache-dir \
     psutil \
     "opencv-python>=4.8.1.78" \
     pyyaml \
-    sageattention \
     triton \
-    || echo "flash-attn/sageattention のビルドに失敗。sdpaモードでフォールバックします"
+    sageattention \
+    || echo "sageattention のインストールに失敗。sdpaモードでフォールバックします"
 
 # handler.py コピー
 COPY handler.py /app/handler.py

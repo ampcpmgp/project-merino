@@ -11,8 +11,23 @@
 ## アーキテクチャ
 
 ```
-AMANE API → RunPod Serverless Endpoint → FlashVSR handler → アップスケール結果
+AMANE API → RunPod Serverless Endpoint → FlashVSR handler → アップスケール結果 → R2 (CDN)
 ```
+
+- **sageattention 有効化**: `--attention_mode sparse_sage_attention`（RTX 4090で1.5-2x高速化）
+- **R2 アップロード**: アップスケール結果を Cloudflare R2 にアップロードし、公開 CDN URL を返す（`file://` で返さない）
+
+## 環境変数（R2 アップロード用）
+
+エンドポイントの環境変数に設定（イメージに埋め込まない）:
+
+| 変数 | 説明 |
+|------|------|
+| `CLOUDFLARE_R2_API_TOKEN` | Cloudflare R2 API トークン |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント ID |
+| `R2_BUCKET` | バケット名（デフォルト `project-merino-assets`） |
+| `R2_PUBLIC_URL` | 公開 CDN URL（デフォルト `https://cdn.harinezumi-m.org`） |
+| `R2_KEY_PREFIX` | キー接頭辞（デフォルト `flashvsr/`） |
 
 ## Docker Build
 
