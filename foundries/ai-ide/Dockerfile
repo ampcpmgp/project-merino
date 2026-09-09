@@ -143,11 +143,6 @@ RUN git clone --depth 1 https://github.com/garrytan/gbrain.git /home/appuser/app
 ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
 ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
 
-# Install SillyTavern
-RUN git clone --depth 1 -b 1.18.0 https://github.com/SillyTavern/SillyTavern.git /home/appuser/app/SillyTavern \
-    && cd /home/appuser/app/SillyTavern \
-    && npm install
-
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
 USER root

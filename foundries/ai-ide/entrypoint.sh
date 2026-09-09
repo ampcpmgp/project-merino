@@ -5,9 +5,6 @@ set -euo pipefail
 mkdir -p /workspace/url-shortcuts /workspace/private
 chown appuser:appuser /workspace/url-shortcuts /workspace/private
 
-# Ensure SillyTavern data directory exists
-mkdir -p "${SILLYTAVERN_DATAROOT}"
-
 # Ensure NGINX basic auth credentials are set
 if [ -z "${NGINX_BASIC_PASSWORD:-}" ]; then
     echo "ERROR: NGINX_BASIC_PASSWORD is not set" >&2
