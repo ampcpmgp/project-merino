@@ -131,6 +131,7 @@ Excalidraw を使ったホワイトボードアプリケーションが内蔵さ
 | 3102 | Hocuspocus | WebSocket リアルタイム同期 + SQLite 永続化 |
 | 3103 | Storage API | Bun + Hono 永続化API（履歴管理/最大30世代） |
 | 3200 | html-api (Bun) | 汎用サーバーフレームワーク（AI・ファイルI/O・ツール実行） |
+| 11434 | Ollama | 埋め込みモデルサーバ（chronicle のベクトル検索用） |
 
 ### html-api
 
@@ -154,4 +155,48 @@ cloudflared 経由で `https://<your-domain>:3100` にアクセスするか、�
 - **フロントエンド**: React 19, Vite 8, @excalidraw/excalidraw 0.18.0
 - **リアルタイム同期**: Yjs (CRDT) + Hocuspocus (WebSocket Server) + SQLite
 - **ストレージ**: Bun + Hono + Zod (履歴管理・tar.gz バックアップ)
+
+## Ollama（埋め込みモデルサーバ）
+
+chronicle のベクトル検索用に Ollama を同梱しています。`supervisor` 管理で `:11434` に常駐します。
+
+### モデルの置き場
+
+**モデルは `/workspace/ollama-models`（= G:\ の 9p マウント）に置きます。** Docker イメージには焼きません（モデルごとに再ビルドが必要になり、リポジトリが肥大するため）。
+
+### ⚠️ 9p マウントの chmod 制約
+
+G:\ は 9p マウントで、**`chmod` が「operation not permitted」で必ず失敗**します。Ollama は pull 時に blobs へ chmod するため、`/workspace` を `OLLAMA_MODELS` にしたまま `ollama pull` すると以下で失敗します。
+
+```
+Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
+```
+
+さらに **`OLLAMA_MODELS` はサーバ側の環境変数**です。クライアント側で `OLLAMA_MODELS=... ollama pull` と指定しても効きません（常駐サーバの設定に従います）。
+
+### モデルの追加方法
+
+`scripts-user/ollama-pull.sh` を使ってください。ext4 に pull して `cp -r` で `/workspace` へ配置します（`cp` は chmod しないため 9p でも成功します）。
+
+```bash
+docker exec -it ai-ide /bin/bash
+/home/appuser/app/scripts-user/ollama-pull.sh qwen3-embedding:0.6b
+```
+
+### 推奨モデル
+
+| モデル | 次元 | サイズ | 日本語性能(JMTEB) | 備考 |
+|--------|------|--------|-------------------|------|
+| **qwen3-embedding:0.6b** | 1024 | 639MB | 72.81 (Retrieval) | 推奨。`embeddings.dimensions` を 1024 に要設定 |
+| embeddinggemma | 768 | 622MB | 58.10 | 日本語は非推奨 |
+| nomic-embed-text | 768 | 274MB | （英語特化） | 日本語では実質機能しない |
+
+実測（Ryzen 9 5900X、100% CPU）: qwen3-embedding:0.6b は 403ms/件、メモリ 2.4GB、1万件の電気代は約 6 円。**GPU は不要**です。
+
+### 動作確認
+
+```bash
+curl -s http://127.0.0.1:11434/api/tags
+curl -s http://127.0.0.1:11434/v1/embeddings \
+  -d '{"model":"qwen3-embedding:0.6b","input":"日本語のテスト"}'
 ```
