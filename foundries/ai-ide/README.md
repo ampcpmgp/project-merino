@@ -176,11 +176,12 @@ Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
 
 ### モデルの追加方法
 
-`scripts-user/ollama-pull.sh` を使ってください。ext4 に pull して `cp -r` で `/workspace` へ配置します（`cp` は chmod しないため 9p でも成功します）。
+`scripts-user/ollama-pull.sh` を使ってください。ext4 に pull して `cp -r` で `/workspace` へ配置します（`cp` は chmod しないため 9p でも成功します）。**引数を省略すると推奨モデル（`qwen3-embedding:0.6b`）が入ります。**
 
 ```bash
 docker exec -it ai-ide /bin/bash
-/home/appuser/app/scripts-user/ollama-pull.sh qwen3-embedding:0.6b
+/home/appuser/app/scripts-user/ollama-pull.sh                    # 既定モデル
+/home/appuser/app/scripts-user/ollama-pull.sh <model>            # モデルを明示
 ```
 
 ### 推奨モデル

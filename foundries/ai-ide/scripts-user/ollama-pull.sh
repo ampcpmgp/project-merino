@@ -15,10 +15,13 @@
 #   常駐サーバは配置済みモデルをそのまま読み出せる。
 #
 # 使い方:
-#   scripts-user/ollama-pull.sh qwen3-embedding:0.6b
+#   scripts-user/ollama-pull.sh                      # 既定モデル（qwen3-embedding:0.6b）
+#   scripts-user/ollama-pull.sh <model>              # モデルを明示する場合
 set -euo pipefail
 
-MODEL="${1:?usage: ollama-pull.sh <model>}"
+# 日本語埋め込みの既定モデル。1024次元・JMTEB 72.81（Retrieval）。
+DEFAULT_MODEL="qwen3-embedding:0.6b"
+MODEL="${1:-${DEFAULT_MODEL}}"
 
 EXT4_DIR="${HOME}/ollama-models-tmp"
 TARGET_DIR="/workspace/ollama-models"
