@@ -158,11 +158,30 @@ cloudflared 経由で `https://<your-domain>:3100` にアクセスするか、�
 
 ## Ollama（埋め込みモデルサーバ）
 
-chronicle のベクトル検索用に Ollama を同梱しています。`supervisor` 管理で `:11434` に常駐します。設定（`OLLAMA_MODELS` などの環境変数）は `config/supervisord.conf` の `[program:ollama]` に集約しています。
+chronicle のベクトル検索用に Ollama をイメージに同梱しています。`supervisor` 管理で `:11434` に常駐します。
+
+### 起動設定
+
+起動はイメージに焼く `config/supervisord.conf` ではなく、**環境ごとの `/workspace/supervisor-conf.d/ollama.conf`** で定義します（`[include]` で読み込まれます）。モデルの置き場やポートは環境ごとに変えられるため、共通設定ではなく環境固有の設定として扱います。
+
+```ini
+[program:ollama]
+command=ollama serve
+autostart=true
+autorestart=true
+priority=44
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",OLLAMA_MODELS="/workspace/ollama-models",OLLAMA_HOST="0.0.0.0:11434",OLLAMA_KEEP_ALIVE="5m",OLLAMA_MAX_LOADED_MODELS="1"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+```
+
+`OLLAMA_MODELS` のディレクトリは Ollama が起動時に自動で作成するため、事前の mkdir は不要です。
 
 ### モデルの置き場
 
-**モデルは `/workspace/ollama-models`（= ホストの 9p マウント）に置きます。** Docker イメージには焼きません（モデルごとに再ビルドが必要になり、リポジトリが肥大するため）。
+**モデルはイメージに焼かず、永続マウント上に置きます**（モデルごとに再ビルドが必要になり、リポジトリが肥大するため）。置き場は `OLLAMA_MODELS` で指定します。
 
 ### ⚠️ 9p マウントの chmod 制約
 

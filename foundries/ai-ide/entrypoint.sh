@@ -5,10 +5,6 @@ set -euo pipefail
 mkdir -p /workspace/url-shortcuts /workspace/private
 chown appuser:appuser /workspace/url-shortcuts /workspace/private
 
-# Ollama のモデル置き場（ホストの 9p マウント。モデルは ollama-pull.sh で cp 配置する）
-mkdir -p /workspace/ollama-models
-chown appuser:appuser /workspace/ollama-models || true
-
 # Ensure NGINX basic auth credentials are set
 if [ -z "${NGINX_BASIC_PASSWORD:-}" ]; then
     echo "ERROR: NGINX_BASIC_PASSWORD is not set" >&2
