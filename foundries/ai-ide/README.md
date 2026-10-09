@@ -131,6 +131,7 @@ Excalidraw を使ったホワイトボードアプリケーションが内蔵さ
 | 3102 | Hocuspocus | WebSocket リアルタイム同期 + SQLite 永続化 |
 | 3103 | Storage API | Bun + Hono 永続化API（履歴管理/最大30世代） |
 | 3200 | html-api (Bun) | 汎用サーバーフレームワーク（AI・ファイルI/O・ツール実行） |
+| 11434 | Ollama | 埋め込みモデルサーバ（chronicle のベクトル検索用） |
 
 ### html-api
 
@@ -154,4 +155,57 @@ cloudflared 経由で `https://<your-domain>:3100` にアクセスするか、�
 - **フロントエンド**: React 19, Vite 8, @excalidraw/excalidraw 0.18.0
 - **リアルタイム同期**: Yjs (CRDT) + Hocuspocus (WebSocket Server) + SQLite
 - **ストレージ**: Bun + Hono + Zod (履歴管理・tar.gz バックアップ)
+
+## Ollama（埋め込みモデルサーバ）
+
+chronicle のベクトル検索用に Ollama をイメージに同梱しています。`supervisor` 管理で `:11434` に常駐します。
+
+### 起動設定
+
+起動はイメージに焼く `config/supervisord.conf` ではなく、**環境ごとの `/workspace/supervisor-conf.d/ollama.conf`** で定義します（`[include]` で読み込まれます）。モデルの置き場やポートは環境ごとに変えられるため、共通設定ではなく環境固有の設定として扱います。
+
+```ini
+[program:ollama]
+command=ollama serve
+autostart=true
+autorestart=true
+priority=44
+user=appuser
+environment=HOME="/home/appuser",USER="appuser",OLLAMA_MODELS="/workspace/ollama-models",OLLAMA_HOST="0.0.0.0:11434",OLLAMA_KEEP_ALIVE="5m",OLLAMA_MAX_LOADED_MODELS="1"
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+```
+
+`OLLAMA_MODELS` のディレクトリは Ollama が起動時に自動で作成するため、事前の mkdir は不要です。
+
+### モデルの置き場
+
+**モデルはイメージに焼かず、永続マウント上に置きます**（モデルごとに再ビルドが必要になり、リポジトリが肥大するため）。置き場は `OLLAMA_MODELS` で指定します。
+
+### ⚠️ 9p マウントの chmod 制約
+
+ホストの 9p マウント（`/workspace`）では **`chmod` が「operation not permitted」で必ず失敗**します。Ollama は pull 時に blobs へ chmod するため、`/workspace` を `OLLAMA_MODELS` にしたまま `ollama pull` すると以下で失敗します。
+
+```
+Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
+```
+
+さらに **`OLLAMA_MODELS` はサーバ側の環境変数**です。クライアント側で `OLLAMA_MODELS=... ollama pull` と指定しても効きません（常駐サーバの設定に従います）。
+
+### モデルの追加方法
+
+`scripts-user/ollama-pull.sh` を使ってください。ext4 に pull して `cp -r` で `/workspace` へ配置します（`cp` は chmod しないため 9p でも成功します）。
+
+```bash
+docker exec -it ai-ide /bin/bash
+/home/appuser/app/scripts-user/ollama-pull.sh <model>
+```
+
+### 動作確認
+
+```bash
+curl -s http://127.0.0.1:11434/api/tags                  # 配置済みモデル一覧
+curl -s http://127.0.0.1:11434/v1/embeddings \
+  -d '{"model":"<model>","input":"テスト"}'                # 埋め込み
 ```

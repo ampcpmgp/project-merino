@@ -59,6 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     cron \
     gh \
+    zstd \
     texlive-binaries \
     pandoc \
     ### Chrome の動作に必要なLinux共有ライブラリをインストール ここまで ###
@@ -142,6 +143,9 @@ RUN git clone --depth 1 https://github.com/garrytan/gbrain.git /home/appuser/app
     && bun link
 ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
 ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
+
+# Install Ollama (embedding server for chronicle / vector search)
+RUN curl -fsSL https://ollama.com/install.sh | sh
 
 # Create code-server config directory and copy settings as root
 # The settings.json file should be placed in a 'config' directory next to the Dockerfile
