@@ -2,7 +2,7 @@
 # ollama-pull.sh — Ollama モデルを /workspace/ollama-models へ配置する
 #
 # 【なぜ普通に pull できないか】
-#   1. /workspace は 9p マウント(G:\)。9p は chmod 不可のため、ここを
+#   1. /workspace は 9p マウント。9p は chmod 不可のため、ここを
 #      OLLAMA_MODELS にしたサーバで pull すると必ず失敗する:
 #        Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
 #   2. OLLAMA_MODELS は【サーバ側】の環境変数。クライアント側で

@@ -145,7 +145,7 @@ ENV GBRAIN_BACKUP_PATH=/workspace/gbrain_backup/gbrain.tar.gz
 ENV BRAIN_BACKUP_PATH=/workspace/brain_backup/brain.tar.gz
 
 # Install Ollama (embedding server for chronicle / vector search)
-# モデルは焼かない。モデルは /workspace/ollama-models（G:\ の 9p マウント）に置く。
+# モデルは焼かない。モデルは /workspace/ollama-models（ホストの 9p マウント）に置く。
 # 9p は chmod 不可のため `ollama pull` はこのパスでは必ず失敗する。
 # pull は scripts-user/ollama-pull.sh を使う（ext4 に pull して cp で配置）。
 RUN curl -fsSL https://ollama.com/install.sh | sh

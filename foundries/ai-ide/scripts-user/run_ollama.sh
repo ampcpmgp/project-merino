@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Ollama 埋め込みサーバ
 #
-# モデルの置き場は /workspace/ollama-models（G:\ の 9p マウント）。
+# モデルの置き場は /workspace/ollama-models（ホストの 9p マウント）。
 # 9p は chmod 不可のため、このパスで `ollama pull` を実行すると
 #   Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
 # で必ず失敗する。モデルは scripts-user/ollama-pull.sh で配置する

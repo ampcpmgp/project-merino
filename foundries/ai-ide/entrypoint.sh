@@ -5,7 +5,7 @@ set -euo pipefail
 mkdir -p /workspace/url-shortcuts /workspace/private
 chown appuser:appuser /workspace/url-shortcuts /workspace/private
 
-# Ollama のモデル置き場（G:\ の 9p マウント。モデルは ollama-pull.sh で cp 配置する）
+# Ollama のモデル置き場（ホストの 9p マウント。モデルは ollama-pull.sh で cp 配置する）
 mkdir -p /workspace/ollama-models
 chown appuser:appuser /workspace/ollama-models || true
 

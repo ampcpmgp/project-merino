@@ -162,11 +162,11 @@ chronicle のベクトル検索用に Ollama を同梱しています。`supervi
 
 ### モデルの置き場
 
-**モデルは `/workspace/ollama-models`（= G:\ の 9p マウント）に置きます。** Docker イメージには焼きません（モデルごとに再ビルドが必要になり、リポジトリが肥大するため）。
+**モデルは `/workspace/ollama-models`（= ホストの 9p マウント）に置きます。** Docker イメージには焼きません（モデルごとに再ビルドが必要になり、リポジトリが肥大するため）。
 
 ### ⚠️ 9p マウントの chmod 制約
 
-G:\ は 9p マウントで、**`chmod` が「operation not permitted」で必ず失敗**します。Ollama は pull 時に blobs へ chmod するため、`/workspace` を `OLLAMA_MODELS` にしたまま `ollama pull` すると以下で失敗します。
+ホストの 9p マウント（`/workspace`）では **`chmod` が「operation not permitted」で必ず失敗**します。Ollama は pull 時に blobs へ chmod するため、`/workspace` を `OLLAMA_MODELS` にしたまま `ollama pull` すると以下で失敗します。
 
 ```
 Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
