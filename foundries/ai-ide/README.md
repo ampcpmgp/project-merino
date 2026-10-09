@@ -176,28 +176,17 @@ Error: chmod /workspace/ollama-models/blobs/sha256-...: operation not permitted
 
 ### モデルの追加方法
 
-`scripts-user/ollama-pull.sh` を使ってください。ext4 に pull して `cp -r` で `/workspace` へ配置します（`cp` は chmod しないため 9p でも成功します）。**引数を省略すると推奨モデル（`qwen3-embedding:0.6b`）が入ります。**
+`scripts-user/ollama-pull.sh` を使ってください。ext4 に pull して `cp -r` で `/workspace` へ配置します（`cp` は chmod しないため 9p でも成功します）。
 
 ```bash
 docker exec -it ai-ide /bin/bash
-/home/appuser/app/scripts-user/ollama-pull.sh                    # 既定モデル
-/home/appuser/app/scripts-user/ollama-pull.sh <model>            # モデルを明示
+/home/appuser/app/scripts-user/ollama-pull.sh <model>
 ```
-
-### 推奨モデル
-
-| モデル | 次元 | サイズ | 日本語性能(JMTEB) | 備考 |
-|--------|------|--------|-------------------|------|
-| **qwen3-embedding:0.6b** | 1024 | 639MB | 72.81 (Retrieval) | 推奨。`embeddings.dimensions` を 1024 に要設定 |
-| embeddinggemma | 768 | 622MB | 58.10 | 日本語は非推奨 |
-| nomic-embed-text | 768 | 274MB | （英語特化） | 日本語では実質機能しない |
-
-実測（Ryzen 9 5900X、100% CPU）: qwen3-embedding:0.6b は 403ms/件、メモリ 2.4GB、1万件の電気代は約 6 円。**GPU は不要**です。
 
 ### 動作確認
 
 ```bash
-curl -s http://127.0.0.1:11434/api/tags
+curl -s http://127.0.0.1:11434/api/tags                  # 配置済みモデル一覧
 curl -s http://127.0.0.1:11434/v1/embeddings \
-  -d '{"model":"qwen3-embedding:0.6b","input":"日本語のテスト"}'
+  -d '{"model":"<model>","input":"テスト"}'                # 埋め込み
 ```
