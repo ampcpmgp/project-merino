@@ -158,7 +158,7 @@ cloudflared 経由で `https://<your-domain>:3100` にアクセスするか、�
 
 ## Ollama（埋め込みモデルサーバ）
 
-chronicle のベクトル検索用に Ollama を同梱しています。`supervisor` 管理で `:11434` に常駐します。
+chronicle のベクトル検索用に Ollama を同梱しています。`supervisor` 管理で `:11434` に常駐します。設定（`OLLAMA_MODELS` などの環境変数）は `config/supervisord.conf` の `[program:ollama]` に集約しています。
 
 ### モデルの置き場
 
